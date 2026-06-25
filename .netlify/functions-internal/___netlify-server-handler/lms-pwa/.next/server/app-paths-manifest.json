@@ -1,0 +1,21 @@
+{
+  "/(dashboard)/dashboard/admin/page": "app/(dashboard)/dashboard/admin/page.js",
+  "/(dashboard)/dashboard/certificates/page": "app/(dashboard)/dashboard/certificates/page.js",
+  "/(dashboard)/dashboard/certificates/view/page": "app/(dashboard)/dashboard/certificates/view/page.js",
+  "/(dashboard)/dashboard/courses/[courseId]/lesson/[lessonId]/page": "app/(dashboard)/dashboard/courses/[courseId]/lesson/[lessonId]/page.js",
+  "/(dashboard)/dashboard/courses/[courseId]/page": "app/(dashboard)/dashboard/courses/[courseId]/page.js",
+  "/(dashboard)/dashboard/courses/page": "app/(dashboard)/dashboard/courses/page.js",
+  "/(dashboard)/dashboard/instructor/page": "app/(dashboard)/dashboard/instructor/page.js",
+  "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js",
+  "/_global-error/page": "app/_global-error/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/admin/approve-enrollment/route": "app/api/admin/approve-enrollment/route.js",
+  "/api/admin/metrics/route": "app/api/admin/metrics/route.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/forgot-password/page": "app/forgot-password/page.js",
+  "/login/page": "app/login/page.js",
+  "/page": "app/page.js",
+  "/signup/page": "app/signup/page.js",
+  "/verify-email/page": "app/verify-email/page.js",
+  "/welcome/page": "app/welcome/page.js"
+}

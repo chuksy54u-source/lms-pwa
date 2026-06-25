@@ -1,0 +1,3 @@
+module.exports=[57362,a=>{a.v({className:"inter_60551302-module__cUOmHG__className",variable:"inter_60551302-module__cUOmHG__variable"})},11950,a=>{"use strict";var b=a.i(19349),c=a.i(57362);let d={className:c.default.className,style:{fontFamily:"'Inter', 'Inter Fallback'",fontStyle:"normal"}};null!=c.default.variable&&(d.variable=c.default.variable),a.s(["default",0,function({children:a}){return(0,b.jsx)("html",{lang:"en",className:`${d.variable}`,children:(0,b.jsx)("body",{className:"bg-[#09090b] text-slate-100 antialiased font-sans",children:a})})},"metadata",0,{title:"Ornate LMS",description:"Learning Management Platform"}],11950)},93962,a=>{a.n(a.i(11950))}];
+
+//# sourceMappingURL=%5Broot-of-the-server%5D__1onh-2q._.js.map

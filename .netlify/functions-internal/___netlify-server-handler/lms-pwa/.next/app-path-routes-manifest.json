@@ -1,0 +1,21 @@
+{
+  "/(dashboard)/dashboard/admin/page": "/dashboard/admin",
+  "/(dashboard)/dashboard/certificates/page": "/dashboard/certificates",
+  "/(dashboard)/dashboard/certificates/view/page": "/dashboard/certificates/view",
+  "/(dashboard)/dashboard/courses/[courseId]/lesson/[lessonId]/page": "/dashboard/courses/[courseId]/lesson/[lessonId]",
+  "/(dashboard)/dashboard/courses/[courseId]/page": "/dashboard/courses/[courseId]",
+  "/(dashboard)/dashboard/courses/page": "/dashboard/courses",
+  "/(dashboard)/dashboard/instructor/page": "/dashboard/instructor",
+  "/(dashboard)/dashboard/page": "/dashboard",
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/api/admin/approve-enrollment/route": "/api/admin/approve-enrollment",
+  "/api/admin/metrics/route": "/api/admin/metrics",
+  "/favicon.ico/route": "/favicon.ico",
+  "/forgot-password/page": "/forgot-password",
+  "/login/page": "/login",
+  "/page": "/",
+  "/signup/page": "/signup",
+  "/verify-email/page": "/verify-email",
+  "/welcome/page": "/welcome"
+}
