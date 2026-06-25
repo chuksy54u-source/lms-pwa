@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    // 1. Initialize Supabase Admin Client using the service role key to access auth schemas
+    // 1. Initialize Supabase Admin Client using the service role key
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -16,18 +16,22 @@ export async function GET() {
 
     if (profilesError) throw profilesError;
 
-    // 3. Fetch the true system accounts directly from auth management to resolve missing emails
-    const { data: { users: authUsers }, error: authError } = await supabaseAdmin.auth.admin.listUsers();
-    
-    if (authError) throw authError;
+    // 3. Safely fetch auth users (wrapped so it doesn't break the whole page if it fails)
+    let authMap = new Map();
+    try {
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.listUsers({
+        perPage: 1000 // Increase the limit to capture everyone
+      });
+      if (!authError && authData?.users) {
+        authMap = new Map(authData.users.map(user => [user.id, user.email]));
+      }
+    } catch (e) {
+      console.warn("Auth list lookup bypassed:", e.message);
+    }
 
-    // Create a fast-lookup map for email strings matching user IDs
-    const authMap = new Map(authUsers.map(user => [user.id, user.email]));
-
-    // 4. Merge records so the Admin panel never shows NULL
+    // 4. Merge records securely
     const safeUsers = (profiles || []).map(profile => ({
       ...profile,
-      // If the profile column email is null, fallback directly to the auth table record
       email: profile.email || authMap.get(profile.id) || 'No Email Verified'
     }));
 
@@ -42,7 +46,13 @@ export async function GET() {
     }, { status: 200 });
 
   } catch (err) {
-    console.error("Master administrative metrics engine compilation failure:", err.message);
-    return NextResponse.json({ totalStudents: 0, totalInstructors: 0, usersList: [] }, { status: 500 });
+    // CRITICAL: Log the actual error message to Netlify logs so you can read it
+    console.error("Master administrative metrics engine failure:", err.message);
+    return NextResponse.json({ 
+      error: err.message,
+      totalStudents: 0, 
+      totalInstructors: 0, 
+      usersList: [] 
+    }, { status: 500 });
   }
 }
