@@ -10,7 +10,7 @@ export default function Home() {
     'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1600&auto=format&fit=crop&q=80'  // Collaboration environment
   ];
 
-  // 2. Hero Box Interactive Frame Showcase Images (Fixed empty slot issue)
+  // 2. Hero Box Interactive Frame Showcase Images
   const heroImages = [
     'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&auto=format&fit=crop&q=80',
     'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&auto=format&fit=crop&q=80',
@@ -121,6 +121,25 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Standard Navigation Tabs */}
+          <nav className="hidden md:flex items-center space-x-8 text-xs font-bold uppercase tracking-wider text-slate-600">
+            <Link href="/" className="hover:text-blue-600 transition-colors border-b-2 border-blue-600 pb-1">
+              Home
+            </Link>
+            <Link href="/programs" className="hover:text-blue-600 transition-colors pb-1">
+              Programs
+            </Link>
+            <Link href="/admissions" className="hover:text-blue-600 transition-colors pb-1">
+              Admissions
+            </Link>
+            <Link href="/about" className="hover:text-blue-600 transition-colors pb-1">
+              About
+            </Link>
+            <Link href="/contact" className="hover:text-blue-600 transition-colors pb-1">
+              Contact
+            </Link>
+          </nav>
+
           <div className="flex items-center space-x-8">
             <Link href="/login" className="text-xs font-bold text-slate-600 hover:text-black transition-colors">
               Sign In
@@ -183,13 +202,14 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {faculties.map((fac, idx) => (
               <div key={idx} className="border border-white/10 bg-black/60 backdrop-blur-md group hover:border-white/30 transition-all duration-300 flex flex-col justify-between overflow-hidden shadow-xl text-white">
-                <div className="h-52 w-full overflow-hidden border-b border-white/10 relative">
+                {/* Image wraps with Link to Signup */}
+                <Link href="/signup" className="h-52 w-full overflow-hidden border-b border-white/10 relative block">
                   <img 
                     src={fac.image} 
                     alt={fac.name} 
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                </div>
+                </Link>
                 <div className="p-6 space-y-3 flex-1 flex flex-col justify-between">
                   <div className="space-y-2">
                     <h3 className="text-base font-bold text-white tracking-tight group-hover:text-blue-400 transition-colors">
@@ -199,8 +219,11 @@ export default function Home() {
                       {fac.desc}
                     </p>
                   </div>
+                  {/* EXPLORE PATH triggers signup redirect */}
                   <div className="pt-4 border-t border-white/10 flex justify-end items-center">
-                    <span className="text-red-400 text-xs font-bold tracking-wider opacity-0 group-hover:opacity-100 transition-all duration-200">EXPLORE PATH →</span>
+                    <Link href="/signup" className="text-red-400 text-xs font-bold tracking-wider opacity-0 group-hover:opacity-100 transition-all duration-200 hover:text-red-300">
+                      EXPLORE PATH →
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -208,9 +231,45 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Global Footer */}
-        <footer className="border-t border-white/10 py-12 text-center text-xs text-slate-400 mt-auto bg-black/60 backdrop-blur-xs">
-          &copy; {new Date().getFullYear()} Ornate Education. All rights reserved.
+        {/* Extended Footer */}
+        <footer className="border-t border-white/10 bg-black/80 backdrop-blur-md text-slate-400 mt-auto text-xs py-12 px-6">
+          <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 mb-8 text-left">
+            <div className="space-y-3">
+              <h4 className="text-white font-bold tracking-wider uppercase text-xs">Ornate Education</h4>
+              <p className="text-slate-400 leading-relaxed max-w-xs">
+                Empowering the next generation of digital leaders with industry-grade software, design, cybersecurity, and artificial intelligence curriculum.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <h4 className="text-white font-bold tracking-wider uppercase text-xs">Academic Sectors</h4>
+              <ul className="space-y-1.5">
+                <li><Link href="/programs" className="hover:text-white transition-colors">Software Engineering</Link></li>
+                <li><Link href="/programs" className="hover:text-white transition-colors">Product UI/UX Design</Link></li>
+                <li><Link href="/programs" className="hover:text-white transition-colors">Applied AI Engineering</Link></li>
+                <li><Link href="/programs" className="hover:text-white transition-colors">Defensive Cybersecurity</Link></li>
+              </ul>
+            </div>
+            <div className="space-y-2">
+              <h4 className="text-white font-bold tracking-wider uppercase text-xs">Resources</h4>
+              <ul className="space-y-1.5">
+                <li><Link href="/admissions" className="hover:text-white transition-colors">Admissions Guidelines</Link></li>
+                <li><Link href="/about" className="hover:text-white transition-colors">About our Mission</Link></li>
+                <li><Link href="/contact" className="hover:text-white transition-colors">Get in touch</Link></li>
+                <li><Link href="/login" className="hover:text-white transition-colors">Student Portal</Link></li>
+              </ul>
+            </div>
+            <div className="space-y-2">
+              <h4 className="text-white font-bold tracking-wider uppercase text-xs">Sitemap & Legal</h4>
+              <ul className="space-y-1.5">
+                <li><Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+                <li><Link href="#" className="hover:text-white transition-colors">Terms of Service</Link></li>
+                <li><Link href="#" className="hover:text-white transition-colors">Security Disclosures</Link></li>
+              </ul>
+            </div>
+          </div>
+          <div className="max-w-7xl mx-auto pt-8 border-t border-white/10 text-center">
+            &copy; {new Date().getFullYear()} Ornate Education. All rights reserved.
+          </div>
         </footer>
       </div>
     </div>
