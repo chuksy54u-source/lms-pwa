@@ -7,7 +7,7 @@ export default function Home() {
   const backgroundSlideshow = [
     'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=1600&auto=format&fit=crop&q=80', // Active modern workspace
     'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1600&auto=format&fit=crop&q=80', // Development interface
-    'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1600&auto=format&fit=crop&q=80'  // Collaboration environment
+    'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1600&auto=format&fit=crop&q=80' // Collaboration environment
   ];
 
   // 2. Hero Box Interactive Frame Showcase Images
@@ -36,31 +36,55 @@ export default function Home() {
   }, []);
 
   const faculties = [
-    { 
-      name: 'School of Software Engineering', 
-      desc: 'Build production-grade applications, distributed systems architecture, and scalable cloud-native web layers.',
+    {
+      name: 'Faculty of Software Engineering & Development',
+      desc: 'Training software developers and digital solution creators. Build production-grade applications, robust architectures, and scalable web layers.',
       image: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600&auto=format&fit=crop&q=80'
     },
-    { 
-      name: 'School of Design', 
-      desc: 'Master advanced UI/UX design engineering, atomic system architectures, design thinking frameworks, and interactive web prototypes.',
+    {
+      name: 'Faculty of UI/UX & Product Design',
+      desc: 'Creating exceptional digital experiences. Master design thinking frameworks, wireframing, high-fidelity prototyping, and atomic UI systems.',
       image: 'https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?w=600&auto=format&fit=crop&q=80'
     },
-    { 
-      name: 'School of Artificial Intelligence', 
-      desc: 'Deploy deep neural networks, automate machine learning pipelines, and optimize large language model contextual performance.',
+    {
+      name: 'Faculty of Artificial Intelligence & Emerging Technologies',
+      desc: 'Preparing students for the future of intelligent technologies. Deploy machine learning pipelines, prompt engineering, and generative AI systems.',
       image: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=600&auto=format&fit=crop&q=80'
     },
-    { 
-      name: 'School of Cybersecurity', 
-      desc: 'Secure enterprise applications, analyze system exploits, and engineer defensive mitigation perimeters for network operations.',
+    {
+      name: 'Faculty of Cybersecurity & Network Technology',
+      desc: 'Building professionals capable of securing digital infrastructure. Analyze system exploits, practice ethical hacking, and secure enterprise assets.',
       image: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=600&auto=format&fit=crop&q=80'
+    },
+    {
+      name: 'Faculty of Data Science & Analytics',
+      desc: 'Empowering data analysis and business intelligence. Master industry-level SQL, Excel analytics, data visualization, and predictive pipelines.',
+      image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&auto=format&fit=crop&q=80'
+    },
+    {
+      name: 'Faculty of Graphic Design & Visual Communication',
+      desc: 'Crafting creative visual communication and brand systems. Design impactful social, print, and branding systems using Adobe Suite and Canva.',
+      image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80'
+    },
+    {
+      name: 'Faculty of Motion Graphics, Video & Digital Media Design',
+      desc: 'Fostering digital storytelling and multimedia production. Learn video editing, motion graphics creation, visual effects, and advanced video workflows.',
+      image: 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=600&auto=format&fit=crop&q=80'
+    },
+    {
+      name: 'Faculty of 3D Design, Animation & Digital Visualization',
+      desc: 'Stepping into immersive digital creation. Master Blender, architectural and product visualization, and advanced 3D rendering workflows.',
+      image: 'https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?w=600&auto=format&fit=crop&q=80'
+    },
+    {
+      name: 'Faculty of Game Development & Interactive Design',
+      desc: 'Designing interactive environments and gaming technology. Build modern games, design immersive experiences, and master Unity and Unreal Engine.',
+      image: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&auto=format&fit=crop&q=80'
     }
   ];
 
   return (
     <div className="min-h-screen relative overflow-hidden text-white selection:bg-red-500/20 antialiased font-sans flex flex-col">
-      
       {/* Cinematic Keyframe Engine inject */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes subtleZoom {
@@ -89,7 +113,6 @@ export default function Home() {
 
       {/* 2. FOREGROUND CONTENT LAYER */}
       <div className="relative z-30 flex flex-col min-h-screen w-full">
-        
         {/* Navigation Header Area */}
         <header className="border-b border-white/10 bg-white/95 backdrop-blur-md sticky top-0 z-50 px-6 md:px-12 py-4 flex justify-between items-center max-w-7xl mx-auto w-full text-black">
           <div className="flex items-center space-x-3 select-none">
@@ -129,9 +152,6 @@ export default function Home() {
             <Link href="/programs" className="hover:text-blue-600 transition-colors pb-1">
               Programs
             </Link>
-            <Link href="/admissions" className="hover:text-blue-600 transition-colors pb-1">
-              Admissions
-            </Link>
             <Link href="/about" className="hover:text-blue-600 transition-colors pb-1">
               About
             </Link>
@@ -153,16 +173,17 @@ export default function Home() {
         {/* Hero Showcase Split Layout */}
         <section className="max-w-7xl mx-auto px-6 md:px-12 pt-16 pb-16 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center flex-1 w-full">
           <div className="space-y-6 text-left">
-            <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight leading-none">
-              Learn Tech Skills That <br />
-              <span className="bg-gradient-to-r from-red-500 via-amber-400 to-blue-400 bg-clip-text text-transparent">Build Your Future</span>
+            <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight leading-none uppercase">
+              Designing Creativity.<br />
+              Building Technology.<br />
+              <span className="bg-gradient-to-r from-red-500 via-amber-400 to-blue-400 bg-clip-text text-transparent">Shaping the Future.</span>
             </h1>
             <p className="text-xs md:text-sm text-slate-200 max-w-xl leading-relaxed font-medium">
-              Join Ornate Education. Master critical technological capabilities in Software Engineering, Design, Artificial Intelligence, and Cybersecurity through intense hands-on development.
+              Welcome to Ornate Tech & Design School (OTDS). We bridge the digital skills gap by prioritizing hands-on portfolio development, practical industry projects, and freelancing readiness to empower the next generation of global innovators.
             </p>
             <div className="pt-2">
               <Link href="/signup" className="inline-block rounded-none bg-red-600 px-8 py-4 font-bold uppercase tracking-widest text-white text-xs hover:bg-white hover:text-black transition-all duration-300 shadow-lg shadow-red-600/10">
-                Join Now
+                Explore Programs
               </Link>
             </div>
           </div>
@@ -188,7 +209,7 @@ export default function Home() {
         <section className="border-y border-white/10 bg-black/40 backdrop-blur-sm py-16 px-6">
           <div className="max-w-4xl mx-auto text-center">
             <p className="text-slate-200 text-sm md:text-base font-medium leading-relaxed max-w-3xl mx-auto">
-              Ornate Education is a specialized digital learning platform dedicated to empowering students with industry-relevant technology skills. Our programs combine practical projects, expert guidance, and structured learning paths to prepare students for successful careers in technology.
+              Ornate Tech & Design School (OTDS) is a premier online technology and design institution established to bridge the growing digital skills gap. Rejecting theory-heavy models, we prioritize real-world projects, expert industry mentorship, and rapid portfolio generation to make you career-ready on day one.
             </p>
           </div>
         </section>
@@ -196,26 +217,26 @@ export default function Home() {
         {/* Core Faculty Grid System */}
         <section className="max-w-7xl mx-auto px-6 md:px-12 py-20 space-y-8 w-full">
           <div>
-            <h2 className="text-xl font-black text-white tracking-tight uppercase">Our Core Faculties</h2>
+            <h2 className="text-xl font-black text-white tracking-tight uppercase">Our Specialized Faculties</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {faculties.map((fac, idx) => (
               <div key={idx} className="border border-white/10 bg-black/60 backdrop-blur-md group hover:border-white/30 transition-all duration-300 flex flex-col justify-between overflow-hidden shadow-xl text-white">
                 {/* Image wraps with Link to Signup */}
                 <Link href="/signup" className="h-52 w-full overflow-hidden border-b border-white/10 relative block">
-                  <img 
-                    src={fac.image} 
-                    alt={fac.name} 
+                  <img
+                    src={fac.image}
+                    alt={fac.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 </Link>
                 <div className="p-6 space-y-3 flex-1 flex flex-col justify-between">
                   <div className="space-y-2">
-                    <h3 className="text-base font-bold text-white tracking-tight group-hover:text-blue-400 transition-colors">
+                    <h3 className="text-sm font-bold text-white tracking-tight uppercase group-hover:text-blue-400 transition-colors min-h-[40px]">
                       {fac.name}
                     </h3>
-                    <p className="text-xs text-slate-300 leading-relaxed">
+                    <p className="text-xs text-slate-300 leading-relaxed line-clamp-3">
                       {fac.desc}
                     </p>
                   </div>
@@ -235,27 +256,26 @@ export default function Home() {
         <footer className="border-t border-white/10 bg-black/80 backdrop-blur-md text-slate-400 mt-auto text-xs py-12 px-6">
           <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 mb-8 text-left">
             <div className="space-y-3">
-              <h4 className="text-white font-bold tracking-wider uppercase text-xs">Ornate Education</h4>
+              <h4 className="text-white font-bold tracking-wider uppercase text-xs">Ornate Tech & Design School</h4>
               <p className="text-slate-400 leading-relaxed max-w-xs">
-                Empowering the next generation of digital leaders with industry-grade software, design, cybersecurity, and artificial intelligence curriculum.
+                To become Africa's premier online institution for technology, design, and digital innovation education by training over 50,000 global digital leaders.
               </p>
             </div>
             <div className="space-y-2">
-              <h4 className="text-white font-bold tracking-wider uppercase text-xs">Academic Sectors</h4>
+              <h4 className="text-white font-bold tracking-wider uppercase text-xs">Academic Faculties</h4>
               <ul className="space-y-1.5">
-                <li><Link href="/programs" className="hover:text-white transition-colors">Software Engineering</Link></li>
-                <li><Link href="/programs" className="hover:text-white transition-colors">Product UI/UX Design</Link></li>
-                <li><Link href="/programs" className="hover:text-white transition-colors">Applied AI Engineering</Link></li>
-                <li><Link href="/programs" className="hover:text-white transition-colors">Defensive Cybersecurity</Link></li>
+                <li><Link href="/programs" className="hover:text-white transition-colors">Software Engineering & Dev</Link></li>
+                <li><Link href="/programs" className="hover:text-white transition-colors">UI/UX & Product Design</Link></li>
+                <li><Link href="/programs" className="hover:text-white transition-colors">AI & Emerging Tech</Link></li>
+                <li><Link href="/programs" className="hover:text-white transition-colors">Cybersecurity & Networks</Link></li>
               </ul>
             </div>
             <div className="space-y-2">
               <h4 className="text-white font-bold tracking-wider uppercase text-xs">Resources</h4>
               <ul className="space-y-1.5">
-                <li><Link href="/admissions" className="hover:text-white transition-colors">Admissions Guidelines</Link></li>
-                <li><Link href="/about" className="hover:text-white transition-colors">About our Mission</Link></li>
+                <li><Link href="/about" className="hover:text-white transition-colors">Our Vision & Statement</Link></li>
                 <li><Link href="/contact" className="hover:text-white transition-colors">Get in touch</Link></li>
-                <li><Link href="/login" className="hover:text-white transition-colors">Student Portal</Link></li>
+                <li><Link href="/login" className="hover:text-white transition-colors">Student Hub Login</Link></li>
               </ul>
             </div>
             <div className="space-y-2">
@@ -268,7 +288,7 @@ export default function Home() {
             </div>
           </div>
           <div className="max-w-7xl mx-auto pt-8 border-t border-white/10 text-center">
-            &copy; {new Date().getFullYear()} Ornate Education. All rights reserved.
+            &copy; {new Date().getFullYear()} Ornate Tech & Design School (OTDS). All rights reserved.
           </div>
         </footer>
       </div>

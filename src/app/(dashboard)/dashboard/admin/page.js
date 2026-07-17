@@ -15,12 +15,15 @@ function AdminDashboardContent() {
   const [pendingCourses, setPendingCourses] = useState([]);
   const [pendingEnrollments, setPendingEnrollments] = useState([]);
   const [activeEnrollments, setActiveEnrollments] = useState([]); // Track approved students
+  const [contactMessages, setContactMessages] = useState([]); // Customer Service Messages
+  
   const [systemMetrics, setSystemMetrics] = useState({ 
     totalStudents: 0, 
     totalInstructors: 0, 
     pendingCount: 0,
     pendingEnrollmentsCount: 0,
-    activeEnrollmentsCount: 0
+    activeEnrollmentsCount: 0,
+    contactMessagesCount: 0 // Active unread/unresolved inquiries
   });
 
   // Course Drawer States
@@ -143,12 +146,26 @@ function AdminDashboardContent() {
       }));
       setActiveEnrollments(sanitizedApproved);
 
+      // 5. Fetch Contact Messages matching exact schema properties
+      // (Order by newest inquiries, querying resolution column value if active)
+      const { data: messages, error: messagesErr } = await supabase
+        .from('contact_messages')
+        .select('id, created_at, name, email, inquiry_type, academic_sector, message, resolution')
+        .order('created_at', { ascending: false });
+
+      if (messagesErr) {
+        console.error("contact_messages Fetch Error:", messagesErr.message);
+      } else {
+        setContactMessages(messages || []);
+      }
+
       setSystemMetrics({
         totalStudents: backendMetrics.totalStudents || 0,
         totalInstructors: backendMetrics.totalInstructors || 0,
         pendingCount: validatedCourses.length,
         pendingEnrollmentsCount: sanitizedPending.length,
-        activeEnrollmentsCount: sanitizedApproved.length
+        activeEnrollmentsCount: sanitizedApproved.length,
+        contactMessagesCount: (messages || []).filter(m => !m.resolution).length // Unresolved messages counter
       });
 
     } catch (err) {
@@ -257,6 +274,22 @@ function AdminDashboardContent() {
     }
   };
 
+  // NEW METHOD: Update resolution column tracking inside Supabase database
+  const handleResolveMessage = async (messageId) => {
+    try {
+      const { error } = await supabase
+        .from('contact_messages')
+        .update({ resolution: 'resolved' }) // Sets 'resolution' column value to 'resolved'
+        .eq('id', messageId);
+
+      if (error) throw error;
+      alert("Message flagged resolved.");
+      await fetchAdminData();
+    } catch (err) {
+      alert(`Could not patch status flag: ${err.message}`);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-8 text-xs text-slate-400 font-mono min-h-screen bg-[#07070a] flex items-center justify-center">
@@ -303,7 +336,7 @@ function AdminDashboardContent() {
       </div>
 
       {/* Analytics Matrix Dashboard */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 font-mono">
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-4 font-mono">
         <div className="border border-white/5 bg-[#0d0d12] p-4 rounded-sm">
           <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Registered Students</span>
           <span className="text-xl font-bold text-white mt-1 block">{systemMetrics.totalStudents}</span>
@@ -323,6 +356,11 @@ function AdminDashboardContent() {
         <div className="border border-white/5 bg-[#0d0d12] p-4 rounded-sm border-emerald-500/20 bg-emerald-500/[0.01]">
           <span className="text-[10px] text-emerald-400 uppercase tracking-wider block">Approved Class Seats</span>
           <span className="text-xl font-bold text-emerald-400 mt-1 block">{systemMetrics.activeEnrollmentsCount}</span>
+        </div>
+        {/* Blue Customer Support Metrics Widget */}
+        <div className="border border-blue-500/20 bg-blue-500/[0.02] p-4 rounded-sm">
+          <span className="text-[10px] text-blue-400 uppercase tracking-wider block">Support Inquiries</span>
+          <span className="text-xl font-bold text-blue-400 mt-1 block">{systemMetrics.contactMessagesCount}</span>
         </div>
       </div>
 
@@ -359,6 +397,17 @@ function AdminDashboardContent() {
           }`}
         >
           Active Classrooms ({systemMetrics.activeEnrollmentsCount})
+        </button>
+        {/* NEW TAB: Customer Service Messages (Blue Accented) */}
+        <button
+          onClick={() => setActiveTab('customer_service')}
+          className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all font-mono border-t border-x ${
+            activeTab === 'customer_service' 
+              ? 'bg-blue-600 text-white border-blue-600' 
+              : 'bg-transparent text-blue-400/80 border-transparent hover:text-blue-300 hover:bg-blue-950/20'
+          }`}
+        >
+          Customer Support ({systemMetrics.contactMessagesCount})
         </button>
       </div>
 
@@ -522,7 +571,7 @@ function AdminDashboardContent() {
           </div>
         )}
 
-        {/* NEW TAB: Active Classrooms (Approved Student Courses Registry) */}
+        {/* Active Classrooms Tab */}
         {activeTab === 'active_classes' && (
           <div className="space-y-4">
             <h3 className="text-xs font-bold font-mono uppercase text-slate-400 tracking-wider">Active Approved Enrollments Matrix</h3>
@@ -562,6 +611,95 @@ function AdminDashboardContent() {
                             ACTIVE
                           </span>
                         </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* CUSTOMER SERVICE SUPPORT MODULE - SIDE BY SIDE LAYOUT */}
+        {activeTab === 'customer_service' && (
+          <div className="space-y-4">
+            <h3 className="text-xs font-bold font-mono uppercase text-blue-400 tracking-wider">Contact Inquiries & Support Tickets</h3>
+            <div className="overflow-x-auto border border-blue-500/20 bg-[#0d0d12] rounded-sm">
+              <table className="w-full text-left font-mono text-xs border-collapse table-fixed">
+                <thead>
+                  <tr className="border-b border-blue-500/20 bg-blue-500/[0.02] text-slate-400 uppercase text-[9px] tracking-widest">
+                    <th className="p-4 font-semibold w-1/2">Sender Details & Metadata</th>
+                    <th className="p-4 font-semibold w-1/2">Inquiry Message Body</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {contactMessages.length === 0 ? (
+                    <tr>
+                      <td colSpan="2" className="p-8 text-center text-slate-600 text-[11px]">No customer service messages indexed in schema.</td>
+                    </tr>
+                  ) : (
+                    contactMessages.map((msg) => (
+                      <tr key={msg.id} className="hover:bg-blue-500/[0.01] transition-colors align-top">
+                        
+                        {/* LEFT COLUMN: Sender details, Inquiry details, Resolve Indicator */}
+                        <td className="p-4 border-l-2 border-blue-500/40 space-y-3">
+                          <div>
+                            <div className="font-bold text-white uppercase text-[11px]">{msg.name || 'Anonymous'}</div>
+                            <div className="text-[10px] text-blue-400 font-mono tracking-tight mt-0.5 select-all">{msg.email}</div>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2 pt-1">
+                            {msg.inquiry_type && (
+                              <span className="px-2 py-0.5 rounded-sm bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[9px] font-bold uppercase">
+                                Type: {msg.inquiry_type}
+                              </span>
+                            )}
+                            {msg.academic_sector && (
+                              <span className="px-2 py-0.5 rounded-sm bg-slate-500/10 text-slate-400 border border-white/10 text-[9px] font-bold uppercase">
+                                Sector: {msg.academic_sector}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-3 pt-2">
+                            {/* Dynamic Resolution status pill indicator */}
+                            {msg.resolution === 'resolved' ? (
+                              <span className="px-2 py-0.5 rounded-sm bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-bold uppercase tracking-wider">
+                                ✓ RESOLVED
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-sm bg-red-500/10 text-red-400 border border-red-500/20 text-[9px] font-bold uppercase tracking-wider">
+                                ⚠ UNRESOLVED
+                              </span>
+                            )}
+                            <span className="text-slate-500 text-[10px] block font-mono">
+                              {msg.created_at ? new Date(msg.created_at).toLocaleString() : 'N/A'}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* RIGHT COLUMN: Message body with Save as Resolved action placed natively underneath */}
+                        <td className="p-4 space-y-4">
+                          <p className="text-[11px] text-slate-300 font-sans leading-relaxed break-words whitespace-pre-line">
+                            {msg.message || 'No written content submitted.'}
+                          </p>
+
+                          <div className="pt-2 border-t border-white/5">
+                            {msg.resolution !== 'resolved' ? (
+                              <button 
+                                onClick={() => handleResolveMessage(msg.id)} 
+                                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-[9px] font-bold uppercase tracking-widest rounded-sm transition-all"
+                              >
+                                Save as Resolved
+                              </button>
+                            ) : (
+                              <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest block">
+                                Ticket Closed & Handled
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
                       </tr>
                     ))
                   )}

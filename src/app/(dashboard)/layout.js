@@ -94,8 +94,20 @@ export default function DashboardLayout({ children }) {
     <div className="min-h-screen bg-[#09090b] text-slate-100 flex antialiased font-sans">
       
       {/* Sidebar navigation */}
-      <aside className="w-64 border-r border-white/5 bg-black/40 backdrop-blur-md flex flex-col justify-between p-6 shrink-0 hidden md:flex">
-        <div className="space-y-8">
+      <aside className="relative w-64 border-r border-white/5 bg-black/60 backdrop-blur-md flex flex-col justify-between p-6 shrink-0 hidden md:flex overflow-hidden">
+        
+        {/* Unsplash Background Image (70% visible) */}
+        <div 
+          className="absolute inset-0 z-0 bg-cover bg-center opacity-70 pointer-events-none"
+          style={{ 
+            backgroundImage: `url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80')` 
+          }}
+        />
+        {/* Overlay to maintain deep contrast and high readability */}
+        <div className="absolute inset-0 bg-black/40 z-0 pointer-events-none" />
+
+        {/* Sidebar Content (z-10 puts elements safely on top of background image) */}
+        <div className="space-y-8 z-10 relative">
           
           {/* Dynamic User Profile Card */}
           <div className="border-b border-white/5 pb-4 space-y-1">
@@ -129,13 +141,13 @@ export default function DashboardLayout({ children }) {
                     pathname === '/dashboard/admin' ? 'bg-white text-black' : 'text-slate-400 hover:text-white hover:bg-white/5'
                   }`}
                 >
-                  ⚙ System Metrics
+                  System Metrics
                 </Link>
                 <Link 
                   href="/dashboard" 
                   className="block px-3 py-2 text-xs font-bold uppercase tracking-wider transition-all text-slate-500 hover:text-slate-300 font-mono pt-4 border-t border-white/5 mt-4"
                 >
-                  ← Student View
+                  Student View
                 </Link>
               </>
             ) : isInstructorRoute ? (
@@ -147,13 +159,13 @@ export default function DashboardLayout({ children }) {
                     pathname === '/dashboard/instructor' ? 'bg-white text-black' : 'text-slate-400 hover:text-white hover:bg-white/5'
                   }`}
                 >
-                  🛠 Control Center
+                  Control Center
                 </Link>
                 <Link 
                   href="/dashboard" 
                   className="block px-3 py-2 text-xs font-bold uppercase tracking-wider transition-all text-slate-500 hover:text-slate-300 font-mono pt-4 border-t border-white/5 mt-4"
                 >
-                  ← Student View
+                  Student View
                 </Link>
               </>
             ) : (
@@ -165,7 +177,7 @@ export default function DashboardLayout({ children }) {
                     pathname === '/dashboard' ? 'bg-white text-black' : 'text-slate-400 hover:text-white hover:bg-white/5'
                   }`}
                 >
-                  📊 Dashboard
+                  Dashboard
                 </Link>
                 <Link 
                   href="/dashboard/courses" 
@@ -173,7 +185,7 @@ export default function DashboardLayout({ children }) {
                     pathname.startsWith('/dashboard/courses') ? 'bg-white text-black' : 'text-slate-400 hover:text-white hover:bg-white/5'
                   }`}
                 >
-                  📚 Courses
+                  Courses
                 </Link>
                 <Link 
                   href="/dashboard/certificates" 
@@ -181,7 +193,7 @@ export default function DashboardLayout({ children }) {
                     pathname === '/dashboard/certificates' ? 'bg-white text-black' : 'text-slate-400 hover:text-white hover:bg-white/5'
                   }`}
                 >
-                  🎓 Certificates
+                  Certificates
                 </Link>
 
                 {/* Conditional Quick-Jump Admin Link */}
@@ -190,7 +202,7 @@ export default function DashboardLayout({ children }) {
                     href="/dashboard/admin" 
                     className="block px-3 py-2 text-[10px] font-bold uppercase tracking-wider transition-all text-purple-400/70 hover:text-purple-400 hover:bg-purple-500/5 font-mono pt-4 border-t border-white/5 mt-4"
                   >
-                    ⚡ Root Admin Console
+                    Root Admin Console
                   </Link>
                 )}
 
@@ -202,7 +214,7 @@ export default function DashboardLayout({ children }) {
                       !privileges.isAdmin ? 'pt-4 border-t border-white/5 mt-4' : ''
                     }`}
                   >
-                    🛠 Instructor Panel
+                    Instructor Panel
                   </Link>
                 )}
               </>
@@ -213,7 +225,7 @@ export default function DashboardLayout({ children }) {
         {/* Logout */}
         <button 
           onClick={handleSignOut}
-          className="w-full text-left px-3 py-2 text-xs font-bold uppercase tracking-widest text-red-400 hover:bg-red-500/10 transition-all font-mono"
+          className="w-full text-left px-3 py-2 text-xs font-bold uppercase tracking-widest text-red-400 hover:bg-red-500/10 transition-all font-mono z-10 relative"
         >
           Logout
         </button>
