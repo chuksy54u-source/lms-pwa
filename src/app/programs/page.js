@@ -144,16 +144,15 @@ export default function Programs() {
   ];
 
   const [activeTab, setActiveTab] = useState(0);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const presenterSectionRef = useRef(null);
   const scrollContainerRef = useRef(null);
 
-  // Smooth scroll handler to guide user viewport back to active frame upon footer click
   const handleFooterNavigation = (index) => {
     setActiveTab(index);
     if (presenterSectionRef.current) {
       presenterSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-    // Also center slide item in the mobile container on footer selection
     scrollActiveTabIntoView(index);
   };
 
@@ -245,6 +244,7 @@ export default function Programs() {
           </div>
         </div>
 
+        {/* Desktop nav - Hidden on mobile */}
         <nav className="hidden md:flex items-center space-x-8 text-xs font-bold uppercase tracking-wider text-slate-600">
           <Link href="/" className="hover:text-blue-600 transition-colors pb-1">
             Home
@@ -260,7 +260,7 @@ export default function Programs() {
           </Link>
         </nav>
 
-        <div className="flex items-center space-x-8">
+        <div className="hidden md:flex items-center space-x-8">
           <Link href="/login" className="text-xs font-bold text-slate-600 hover:text-black transition-colors">
             Sign In
           </Link>
@@ -268,7 +268,81 @@ export default function Programs() {
             Get Started
           </Link>
         </div>
+
+        {/* Hamburger Icon Button for Mobile Tabs */}
+        <button 
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          type="button"
+          className="md:hidden p-2 text-black hover:text-red-600 focus:outline-none transition-colors"
+          aria-label="Toggle Main Menu Navigation"
+          aria-expanded={isMobileMenuOpen}
+        >
+          {isMobileMenuOpen ? (
+            /* Close Icon */
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          ) : (
+            /* Hamburger Icon */
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          )}
+        </button>
       </header>
+
+      {/* Mobile Drawer Navigation Panel */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 top-[73px] bg-black/95 z-40 flex flex-col border-b border-white/15 animate-slide-up">
+          <nav className="flex flex-col space-y-6 p-8 text-lg font-bold uppercase tracking-widest border-b border-white/10">
+            <Link 
+              href="/" 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="hover:text-red-500 transition-colors"
+            >
+              Home
+            </Link>
+            <Link 
+              href="/programs" 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-red-500 transition-colors"
+            >
+              Programs
+            </Link>
+            <Link 
+              href="/about" 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="hover:text-red-500 transition-colors"
+            >
+              About
+            </Link>
+            <Link 
+              href="/contact" 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="hover:text-red-500 transition-colors"
+            >
+              Contact
+            </Link>
+          </nav>
+          
+          <div className="p-8 flex flex-col gap-4 mt-auto">
+            <Link 
+              href="/login" 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-center py-3 border border-white/20 text-sm font-bold uppercase tracking-wider text-white hover:bg-white/10 transition-all"
+            >
+              Sign In
+            </Link>
+            <Link 
+              href="/signup" 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-center py-4 bg-red-600 text-sm font-bold uppercase tracking-widest text-white hover:bg-white hover:text-black transition-all"
+            >
+              Get Started
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Main Core Body Container */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 md:px-12 py-8 md:py-20 flex flex-col space-y-10 md:space-y-16">
@@ -485,7 +559,6 @@ export default function Programs() {
             </p>
           </div>
 
-          {/* Grid layout adapts seamlessly between phone (1 col), tablet (2 col), and desktop (4 col) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <div className="border border-white/10 bg-white/[0.01] p-5 md:p-6 space-y-3">
               <span className="text-xs font-black font-mono text-red-500">LEVEL 01</span>
