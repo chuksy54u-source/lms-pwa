@@ -19,6 +19,7 @@ export default function Home() {
 
   const [bgIndex, setBgIndex] = useState(0);
   const [heroIndex, setHeroIndex] = useState(0);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const bgTimer = setInterval(() => {
@@ -144,7 +145,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Standard Navigation Tabs */}
+          {/* Standard Navigation Tabs (Desktop Only) */}
           <nav className="hidden md:flex items-center space-x-8 text-xs font-bold uppercase tracking-wider text-slate-600">
             <Link href="/" className="hover:text-blue-600 transition-colors border-b-2 border-blue-600 pb-1">
               Home
@@ -160,7 +161,8 @@ export default function Home() {
             </Link>
           </nav>
 
-          <div className="flex items-center space-x-8">
+          {/* Call to Actions (Desktop Only) */}
+          <div className="hidden md:flex items-center space-x-8">
             <Link href="/login" className="text-xs font-bold text-slate-600 hover:text-black transition-colors">
               Sign In
             </Link>
@@ -168,12 +170,74 @@ export default function Home() {
               Get Started
             </Link>
           </div>
+
+          {/* Hamburger Icon for Mobile Layouts */}
+          <button 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
+            className="md:hidden p-1 flex flex-col justify-center items-end space-y-1.5 w-8 h-8"
+            aria-label="Toggle navigation menu"
+          >
+            <span className={`block h-0.5 bg-black transition-all duration-300 ${isMobileMenuOpen ? 'w-6 rotate-45 translate-y-2' : 'w-6'}`} />
+            <span className={`block h-0.5 bg-black transition-all duration-300 ${isMobileMenuOpen ? 'w-0 opacity-0' : 'w-4'}`} />
+            <span className={`block h-0.5 bg-black transition-all duration-300 ${isMobileMenuOpen ? 'w-6 -rotate-45 -translate-y-2' : 'w-5'}`} />
+          </button>
         </header>
 
+        {/* Mobile Dropdown Menu Container */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden fixed top-[73px] left-0 right-0 bg-white border-b border-black/10 z-50 flex flex-col px-6 py-6 space-y-4 text-black animate-fade-in shadow-xl">
+            <Link 
+              href="/" 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-sm font-bold uppercase tracking-wider text-blue-600 border-l-2 border-blue-600 pl-2"
+            >
+              Home
+            </Link>
+            <Link 
+              href="/programs" 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-sm font-bold uppercase tracking-wider text-slate-600 hover:text-black pl-2"
+            >
+              Programs
+            </Link>
+            <Link 
+              href="/about" 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-sm font-bold uppercase tracking-wider text-slate-600 hover:text-black pl-2"
+            >
+              About
+            </Link>
+            <Link 
+              href="/contact" 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-sm font-bold uppercase tracking-wider text-slate-600 hover:text-black pl-2"
+            >
+              Contact
+            </Link>
+            <hr className="border-slate-200 my-1" />
+            <div className="flex flex-col space-y-3 pt-2">
+              <Link 
+                href="/login" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="text-sm font-bold text-center text-slate-600 hover:text-black py-2.5 border border-slate-300"
+              >
+                Sign In
+              </Link>
+              <Link 
+                href="/signup" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="text-sm font-bold text-center bg-black text-white py-3 hover:bg-red-600 transition-colors"
+              >
+                Get Started
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Hero Showcase Split Layout */}
-        <section className="max-w-7xl mx-auto px-6 md:px-12 pt-16 pb-16 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center flex-1 w-full">
-          <div className="space-y-6 text-left">
-            <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight leading-none uppercase">
+        <section className="max-w-7xl mx-auto px-6 md:px-12 pt-8 pb-12 md:pt-16 md:pb-16 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center flex-1 w-full">
+          <div className="space-y-5 md:space-y-6 text-left">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-none uppercase">
               Designing Creativity.<br />
               Building Technology.<br />
               <span className="bg-gradient-to-r from-red-500 via-amber-400 to-blue-400 bg-clip-text text-transparent">Shaping the Future.</span>
@@ -181,8 +245,8 @@ export default function Home() {
             <p className="text-xs md:text-sm text-slate-200 max-w-xl leading-relaxed font-medium">
               Welcome to Ornate Tech & Design School (OTDS). We bridge the digital skills gap by prioritizing hands-on portfolio development, practical industry projects, and freelancing readiness to empower the next generation of global innovators.
             </p>
-            <div className="pt-2">
-              <Link href="/signup" className="inline-block rounded-none bg-red-600 px-8 py-4 font-bold uppercase tracking-widest text-white text-xs hover:bg-white hover:text-black transition-all duration-300 shadow-lg shadow-red-600/10">
+            <div className="pt-1 md:pt-2">
+              <Link href="/signup" className="inline-block w-full sm:w-auto text-center rounded-none bg-red-600 px-8 py-4 font-bold uppercase tracking-widest text-white text-xs hover:bg-white hover:text-black transition-all duration-300 shadow-lg shadow-red-600/10">
                 Explore Programs
               </Link>
             </div>
@@ -190,7 +254,7 @@ export default function Home() {
 
           {/* Secure Interactive Image Slideshow Box */}
           <div className="p-2 border border-white/20 bg-white/10 backdrop-blur-md shadow-2xl relative overflow-hidden">
-            <div className="w-full h-[380px] relative bg-slate-900/40">
+            <div className="w-full h-[240px] sm:h-[320px] md:h-[380px] relative bg-slate-900/40">
               {heroImages.map((srcUrl, index) => (
                 <img
                   key={index}
@@ -206,43 +270,43 @@ export default function Home() {
         </section>
 
         {/* Institutional Statement Bar */}
-        <section className="border-y border-white/10 bg-black/40 backdrop-blur-sm py-16 px-6">
+        <section className="border-y border-white/10 bg-black/40 backdrop-blur-sm py-12 md:py-16 px-6">
           <div className="max-w-4xl mx-auto text-center">
-            <p className="text-slate-200 text-sm md:text-base font-medium leading-relaxed max-w-3xl mx-auto">
+            <p className="text-slate-200 text-xs sm:text-sm md:text-base font-medium leading-relaxed max-w-3xl mx-auto">
               Ornate Tech & Design School (OTDS) is a premier online technology and design institution established to bridge the growing digital skills gap. Rejecting theory-heavy models, we prioritize real-world projects, expert industry mentorship, and rapid portfolio generation to make you career-ready on day one.
             </p>
           </div>
         </section>
 
         {/* Core Faculty Grid System */}
-        <section className="max-w-7xl mx-auto px-6 md:px-12 py-20 space-y-8 w-full">
+        <section className="max-w-7xl mx-auto px-6 md:px-12 py-16 md:py-20 space-y-8 w-full">
           <div>
-            <h2 className="text-xl font-black text-white tracking-tight uppercase">Our Specialized Faculties</h2>
+            <h2 className="text-lg md:text-xl font-black text-white tracking-tight uppercase">Our Specialized Faculties</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {faculties.map((fac, idx) => (
               <div key={idx} className="border border-white/10 bg-black/60 backdrop-blur-md group hover:border-white/30 transition-all duration-300 flex flex-col justify-between overflow-hidden shadow-xl text-white">
                 {/* Image wraps with Link to Signup */}
-                <Link href="/signup" className="h-52 w-full overflow-hidden border-b border-white/10 relative block">
+                <Link href="/signup" className="h-48 sm:h-52 w-full overflow-hidden border-b border-white/10 relative block">
                   <img
                     src={fac.image}
                     alt={fac.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 </Link>
-                <div className="p-6 space-y-3 flex-1 flex flex-col justify-between">
+                <div className="p-5 md:p-6 space-y-3 flex-1 flex flex-col justify-between">
                   <div className="space-y-2">
-                    <h3 className="text-sm font-bold text-white tracking-tight uppercase group-hover:text-blue-400 transition-colors min-h-[40px]">
+                    <h3 className="text-xs sm:text-sm font-bold text-white tracking-tight uppercase group-hover:text-blue-400 transition-colors min-h-[40px]">
                       {fac.name}
                     </h3>
-                    <p className="text-xs text-slate-300 leading-relaxed line-clamp-3">
+                    <p className="text-[11px] sm:text-xs text-slate-300 leading-relaxed line-clamp-3">
                       {fac.desc}
                     </p>
                   </div>
                   {/* EXPLORE PATH triggers signup redirect */}
                   <div className="pt-4 border-t border-white/10 flex justify-end items-center">
-                    <Link href="/signup" className="text-red-400 text-xs font-bold tracking-wider opacity-0 group-hover:opacity-100 transition-all duration-200 hover:text-red-300">
+                    <Link href="/signup" className="text-red-400 text-xs font-bold tracking-wider md:opacity-0 group-hover:opacity-100 transition-all duration-200 hover:text-red-300">
                       EXPLORE PATH →
                     </Link>
                   </div>
@@ -253,16 +317,16 @@ export default function Home() {
         </section>
 
         {/* Extended Footer */}
-        <footer className="border-t border-white/10 bg-black/80 backdrop-blur-md text-slate-400 mt-auto text-xs py-12 px-6">
-          <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 mb-8 text-left">
+        <footer className="border-t border-white/10 bg-black/80 backdrop-blur-md text-slate-400 mt-auto text-[11px] sm:text-xs py-12 px-6">
+          <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-8 text-left">
             <div className="space-y-3">
-              <h4 className="text-white font-bold tracking-wider uppercase text-xs">Ornate Tech & Design School</h4>
+              <h4 className="text-white font-bold tracking-wider uppercase text-[11px] sm:text-xs">Ornate Tech & Design School</h4>
               <p className="text-slate-400 leading-relaxed max-w-xs">
                 To become Africa's premier online institution for technology, design, and digital innovation education by training over 50,000 global digital leaders.
               </p>
             </div>
             <div className="space-y-2">
-              <h4 className="text-white font-bold tracking-wider uppercase text-xs">Academic Faculties</h4>
+              <h4 className="text-white font-bold tracking-wider uppercase text-[11px] sm:text-xs">Academic Faculties</h4>
               <ul className="space-y-1.5">
                 <li><Link href="/programs" className="hover:text-white transition-colors">Software Engineering & Dev</Link></li>
                 <li><Link href="/programs" className="hover:text-white transition-colors">UI/UX & Product Design</Link></li>
@@ -271,7 +335,7 @@ export default function Home() {
               </ul>
             </div>
             <div className="space-y-2">
-              <h4 className="text-white font-bold tracking-wider uppercase text-xs">Resources</h4>
+              <h4 className="text-white font-bold tracking-wider uppercase text-[11px] sm:text-xs">Resources</h4>
               <ul className="space-y-1.5">
                 <li><Link href="/about" className="hover:text-white transition-colors">Our Vision & Statement</Link></li>
                 <li><Link href="/contact" className="hover:text-white transition-colors">Get in touch</Link></li>
@@ -279,7 +343,7 @@ export default function Home() {
               </ul>
             </div>
             <div className="space-y-2">
-              <h4 className="text-white font-bold tracking-wider uppercase text-xs">Sitemap & Legal</h4>
+              <h4 className="text-white font-bold tracking-wider uppercase text-[11px] sm:text-xs">Sitemap & Legal</h4>
               <ul className="space-y-1.5">
                 <li><Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link></li>
                 <li><Link href="#" className="hover:text-white transition-colors">Terms of Service</Link></li>

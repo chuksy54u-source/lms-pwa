@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 
 export default function Programs() {
@@ -143,6 +144,15 @@ export default function Programs() {
   ];
 
   const [activeTab, setActiveTab] = useState(0);
+  const presenterSectionRef = useRef(null);
+
+  // Smooth scroll handler to guide user viewport back to active frame upon footer click
+  const handleFooterNavigation = (index) => {
+    setActiveTab(index);
+    if (presenterSectionRef.current) {
+      presenterSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-black text-white selection:bg-red-500/20 antialiased font-sans flex flex-col relative overflow-hidden">
@@ -250,11 +260,20 @@ export default function Programs() {
           </p>
         </div>
 
-        {/* PowerPoint-style Controller Bar (Updated to support 9 faculties dynamically) */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9 gap-3 border-b border-white/10 pb-6 w-full z-10 animate-slide-up">
+        {/* Controller Bar */}
+        <div 
+          ref={presenterSectionRef}
+          role="tablist"
+          aria-label="Academic Faculties"
+          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-9 gap-3 border-b border-white/10 pb-6 w-full z-10 animate-slide-up"
+        >
           {programsData.map((prog, index) => (
             <button
               key={prog.id}
+              id={`tab-${prog.id}`}
+              role="tab"
+              aria-selected={activeTab === index}
+              aria-controls={`panel-${prog.id}`}
               onClick={() => setActiveTab(index)}
               className={`text-left p-3 border transition-all duration-300 relative group overflow-hidden ${
                 activeTab === index 
@@ -277,17 +296,23 @@ export default function Programs() {
         </div>
 
         {/* Active Slide Presentation Stage */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start w-full min-h-[500px]">
+        <div 
+          id={`panel-${programsData[activeTab].id}`}
+          role="tabpanel"
+          aria-labelledby={`tab-${programsData[activeTab].id}`}
+          className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start w-full min-h-[500px]"
+        >
           
           {/* Left Column: Dynamic Image and Academic Pathways */}
-          <div className="lg:col-span-5 space-y-6 animate-zoom-in">
-            <div className="h-[280px] lg:h-[340px] w-full p-2 border border-white/10 bg-white/5 backdrop-blur-md relative overflow-hidden">
+          <div className="lg:col-span-5 space-y-6 animate-zoom-in" key={`image-stage-${activeTab}`}>
+            <div className="h-[280px] lg:h-[340px] w-full p-2 border border-white/10 bg-white/5 backdrop-blur-md relative overflow-hidden animate-fade-in">
               <div className="relative w-full h-full bg-slate-900/60 overflow-hidden">
                 <img
                   src={programsData[activeTab].image}
                   alt={programsData[activeTab].name}
+                  decoding="async"
+                  loading="lazy"
                   className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 scale-100"
-                  key={activeTab}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
                 <div className="absolute bottom-6 left-6 right-6">
@@ -301,9 +326,9 @@ export default function Programs() {
             <div className="border border-white/10 bg-white/[0.02] p-6 space-y-3 text-left">
               <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block">Available Diploma Paths</span>
               <div className="grid grid-cols-1 gap-2">
-                {programsData[activeTab].diplomas.map((diploma, dIdx) => (
-                  <div key={dIdx} className="flex items-center space-x-2 text-xs text-slate-300">
-                    <span className="w-1.5 h-1.5 bg-red-600 rounded-none"></span>
+                {programsData[activeTab].diplomas.map((diploma) => (
+                  <div key={diploma} className="flex items-center space-x-2 text-xs text-slate-300">
+                    <span className="w-1.5 h-1.5 bg-red-600 rounded-none flex-shrink-0"></span>
                     <span>{diploma}</span>
                   </div>
                 ))}
@@ -312,7 +337,7 @@ export default function Programs() {
           </div>
 
           {/* Right Column: Animated Slide Text and Achievements */}
-          <div className="lg:col-span-7 space-y-8 flex flex-col justify-between h-full text-left" key={programsData[activeTab].id}>
+          <div className="lg:col-span-7 space-y-8 flex flex-col justify-between h-full text-left" key={`content-stage-${activeTab}`}>
             
             {/* Header Block of Slide */}
             <div className="space-y-4 animate-slide-up">
@@ -324,7 +349,7 @@ export default function Programs() {
               </p>
             </div>
 
-            {/* Achievements List Staggered Presentation Section */}
+            {/* Achievements List */}
             <div className="space-y-4">
               <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block">Core Achievements Upon Graduation</span>
               
@@ -333,10 +358,9 @@ export default function Programs() {
                   const staggerClass = aIdx === 0 ? 'animate-stagger-1' : aIdx === 1 ? 'animate-stagger-2' : 'animate-stagger-3';
                   
                   return (
-                    <div key={aIdx} className={`border border-white/5 bg-white/[0.02] p-4 flex gap-4 items-start hover:bg-white/[0.04] transition-colors ${staggerClass}`}>
-                      {/* Geometric Target Vector icon */}
+                    <div key={ach.label} className={`border border-white/5 bg-white/[0.02] p-4 flex gap-4 items-start hover:bg-white/[0.04] transition-colors ${staggerClass}`}>
                       <div className="mt-0.5 flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-none border border-red-500/40 bg-red-500/10 text-red-500">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" aria-hidden="true">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                         </svg>
                       </div>
@@ -374,7 +398,7 @@ export default function Programs() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <div className="border border-white/10 bg-white/[0.01] p-6 space-y-3">
               <span className="text-xs font-black font-mono text-red-500">LEVEL 01</span>
               <h3 className="text-sm font-bold text-white uppercase tracking-tight">Express Certification</h3>
@@ -416,10 +440,10 @@ export default function Programs() {
           <div className="space-y-2">
             <h4 className="text-white font-bold tracking-wider uppercase text-xs">Academic Sectors</h4>
             <ul className="space-y-1.5">
-              <li><button onClick={() => setActiveTab(0)} className="hover:text-white transition-colors text-left">Software Engineering</button></li>
-              <li><button onClick={() => setActiveTab(5)} className="hover:text-white transition-colors text-left">Product UI/UX Design</button></li>
-              <li><button onClick={() => setActiveTab(1)} className="hover:text-white transition-colors text-left">Applied AI Engineering</button></li>
-              <li><button onClick={() => setActiveTab(2)} className="hover:text-white transition-colors text-left">Defensive Cybersecurity</button></li>
+              <li><button onClick={() => handleFooterNavigation(0)} className="hover:text-white transition-colors text-left">Software Engineering</button></li>
+              <li><button onClick={() => handleFooterNavigation(5)} className="hover:text-white transition-colors text-left">Product UI/UX Design</button></li>
+              <li><button onClick={() => handleFooterNavigation(1)} className="hover:text-white transition-colors text-left">Applied AI Engineering</button></li>
+              <li><button onClick={() => handleFooterNavigation(2)} className="hover:text-white transition-colors text-left">Defensive Cybersecurity</button></li>
             </ul>
           </div>
           <div className="space-y-2">
