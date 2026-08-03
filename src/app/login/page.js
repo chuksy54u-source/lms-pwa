@@ -10,6 +10,7 @@ export default function Login() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
   const backgroundSlideshow = [
@@ -30,28 +31,54 @@ export default function Login() {
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMessage('');
 
+    // 1. Authenticate user credentials
     const { data, error } = await supabase.auth.signInWithPassword({
       email: email,
       password: password,
     });
 
     if (error) {
-      alert(error.message);
+      setErrorMessage(error.message);
       setLoading(false);
       return;
     }
 
     try {
-      // Look up profile record to determine where to drop the user session
-      const { data: profile } = await supabase
+      // 2. Query profile for user role & scholar flag
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('is_instructor')
+        .select('is_instructor, is_scholar')
         .eq('id', data.user.id)
         .single();
 
-      setLoading(false);
+      if (profileError) {
+        throw profileError;
+      }
 
+      // 3. Check scholarship status if user is a scholar student
+      if (profile?.is_scholar) {
+        const { data: scholarRecord } = await supabase
+          .from('scholarship_students')
+          .select('status')
+          .eq('user_id', data.user.id)
+          .maybeSingle();
+
+        // Block login if record doesn't exist yet or status is not 'verified'
+        if (!scholarRecord || scholarRecord.status !== 'verified') {
+          // Immediately revoke session
+          await supabase.auth.signOut();
+          setLoading(false);
+          
+          // Redirect to administrative pending page
+          router.push('/scholarship-pending');
+          return;
+        }
+      }
+
+      // 4. Access Granted -> Redirect based on role
+      setLoading(false);
       if (profile?.is_instructor) {
         router.push('/dashboard/instructor');
       } else {
@@ -60,7 +87,7 @@ export default function Login() {
 
     } catch (err) {
       setLoading(false);
-      router.push('/dashboard'); // Fallback safe route
+      setErrorMessage('An unexpected error occurred while verifying profile status.');
     }
   };
 
@@ -112,6 +139,13 @@ export default function Login() {
           </p>
         </div>
 
+        {/* ERROR DISPLAY */}
+        {errorMessage && (
+          <div className="p-3 bg-red-600/20 border border-red-500/40 text-red-300 text-xs font-mono">
+            {errorMessage}
+          </div>
+        )}
+
         <form className="space-y-4" onSubmit={handleLoginSubmit}>
           <div className="space-y-1">
             <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Email Address</label>
@@ -150,7 +184,7 @@ export default function Login() {
         </form>
 
         <div className="text-center text-xs text-slate-400 pt-2 border-t border-white/5">
-          Don't have an account?{' '}
+          Don&apos;t have an account?{' '}
           <Link href="/signup" className="text-blue-400 font-bold hover:underline">Sign Up</Link>
         </div>
       </div>

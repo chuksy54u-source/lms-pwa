@@ -14,8 +14,9 @@ function AdminDashboardContent() {
   const [profiles, setProfiles] = useState([]);
   const [pendingCourses, setPendingCourses] = useState([]);
   const [pendingEnrollments, setPendingEnrollments] = useState([]);
-  const [activeEnrollments, setActiveEnrollments] = useState([]); // Track approved students
-  const [contactMessages, setContactMessages] = useState([]); // Customer Service Messages
+  const [activeEnrollments, setActiveEnrollments] = useState([]); 
+  const [contactMessages, setContactMessages] = useState([]); 
+  const [scholarshipStudents, setScholarshipStudents] = useState([]); // Scholarship Registry State
   
   const [systemMetrics, setSystemMetrics] = useState({ 
     totalStudents: 0, 
@@ -23,7 +24,9 @@ function AdminDashboardContent() {
     pendingCount: 0,
     pendingEnrollmentsCount: 0,
     activeEnrollmentsCount: 0,
-    contactMessagesCount: 0 // Active unread/unresolved inquiries
+    contactMessagesCount: 0,
+    pendingScholarsCount: 0, // Pending scholars count
+    verifiedScholarsCount: 0 // Verified scholars count
   });
 
   // Course Drawer States
@@ -40,7 +43,7 @@ function AdminDashboardContent() {
     description: '',
   });
 
-  // Asset File States (Only Images and Videos)
+  // Asset File States
   const [imageFile, setImageFile] = useState(null);
   const [videoFile, setVideoFile] = useState(null);
 
@@ -85,7 +88,7 @@ function AdminDashboardContent() {
       if (coursesError) console.error("Courses Fetch Error:", coursesError.message);
       const rawCourses = coursesData || [];
 
-      // 2. Fetch global enrollments to calculate student sub-totals per course
+      // 2. Fetch global enrollments
       const { data: globalEnrollments, error: globalEnrollError } = await supabase
         .from('enrollments')
         .select('id, user_id, course_id, status, full_name');
@@ -112,7 +115,6 @@ function AdminDashboardContent() {
       }));
       setPendingCourses(validatedCourses);
 
-      // Extract unique IDs across queues to map system course titles and profiles efficiently
       const courseIds = Array.from(new Set((globalEnrollments || []).map(e => e.course_id)));
       const userIds = Array.from(new Set((globalEnrollments || []).map(e => e.user_id)));
 
@@ -146,18 +148,29 @@ function AdminDashboardContent() {
       }));
       setActiveEnrollments(sanitizedApproved);
 
-      // 5. Fetch Contact Messages matching exact schema properties
-      // (Order by newest inquiries, querying resolution column value if active)
+      // 5. Fetch Contact Messages
       const { data: messages, error: messagesErr } = await supabase
         .from('contact_messages')
         .select('id, created_at, name, email, inquiry_type, academic_sector, message, resolution')
         .order('created_at', { ascending: false });
 
-      if (messagesErr) {
-        console.error("contact_messages Fetch Error:", messagesErr.message);
+      if (messagesErr) console.error("contact_messages Fetch Error:", messagesErr.message);
+      else setContactMessages(messages || []);
+
+      // 6. Fetch Scholarship Students Registry
+      const { data: scholars, error: scholarsErr } = await supabase
+        .from('scholarship_students')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (scholarsErr) {
+        console.error("scholarship_students Fetch Error:", scholarsErr.message);
       } else {
-        setContactMessages(messages || []);
+        setScholarshipStudents(scholars || []);
       }
+
+      const pendingScholars = (scholars || []).filter(s => s.status === null || s.status === 'pending');
+      const verifiedScholars = (scholars || []).filter(s => s.status === 'verified');
 
       setSystemMetrics({
         totalStudents: backendMetrics.totalStudents || 0,
@@ -165,7 +178,9 @@ function AdminDashboardContent() {
         pendingCount: validatedCourses.length,
         pendingEnrollmentsCount: sanitizedPending.length,
         activeEnrollmentsCount: sanitizedApproved.length,
-        contactMessagesCount: (messages || []).filter(m => !m.resolution).length // Unresolved messages counter
+        contactMessagesCount: (messages || []).filter(m => !m.resolution).length,
+        pendingScholarsCount: pendingScholars.length,
+        verifiedScholarsCount: verifiedScholars.length
       });
 
     } catch (err) {
@@ -274,12 +289,11 @@ function AdminDashboardContent() {
     }
   };
 
-  // NEW METHOD: Update resolution column tracking inside Supabase database
   const handleResolveMessage = async (messageId) => {
     try {
       const { error } = await supabase
         .from('contact_messages')
-        .update({ resolution: 'resolved' }) // Sets 'resolution' column value to 'resolved'
+        .update({ resolution: 'resolved' })
         .eq('id', messageId);
 
       if (error) throw error;
@@ -287,6 +301,32 @@ function AdminDashboardContent() {
       await fetchAdminData();
     } catch (err) {
       alert(`Could not patch status flag: ${err.message}`);
+    }
+  };
+
+  // SCHOLARSHIP VERIFICATION ACTION
+  const handleVerifyScholar = async (scholarId, email, fullName, action) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const res = await fetch('/api/admin/verify-scholar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({ scholarId, email, fullName, action })
+      });
+
+      const result = await res.json();
+      if (!res.ok || result.error) {
+        throw new Error(result.error || 'Failed to update scholar status.');
+      }
+
+      alert(`Scholarship student status updated to '${action}' and notification email dispatched!`);
+      await fetchAdminData();
+    } catch (err) {
+      alert(`Scholar verification exception: ${err.message}`);
     }
   };
 
@@ -336,7 +376,7 @@ function AdminDashboardContent() {
       </div>
 
       {/* Analytics Matrix Dashboard */}
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-4 font-mono">
+      <div className="grid grid-cols-1 md:grid-cols-7 gap-3 font-mono">
         <div className="border border-white/5 bg-[#0d0d12] p-4 rounded-sm">
           <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Registered Students</span>
           <span className="text-xl font-bold text-white mt-1 block">{systemMetrics.totalStudents}</span>
@@ -346,18 +386,22 @@ function AdminDashboardContent() {
           <span className="text-xl font-bold text-blue-400 mt-1 block">{systemMetrics.totalInstructors}</span>
         </div>
         <div className="border border-white/5 bg-[#0d0d12] p-4 rounded-sm">
-          <span className="text-[10px] text-amber-400 uppercase tracking-wider block">Total Active Courses</span>
+          <span className="text-[10px] text-amber-400 uppercase tracking-wider block">Active Courses</span>
           <span className="text-xl font-bold text-amber-400 mt-1 block">{systemMetrics.pendingCount}</span>
         </div>
         <div className="border border-white/5 bg-[#0d0d12] p-4 rounded-sm border-purple-500/20 bg-purple-500/[0.01]">
-          <span className="text-[10px] text-purple-400 uppercase tracking-wider block">Pending Seat Approvals</span>
+          <span className="text-[10px] text-purple-400 uppercase tracking-wider block">Pending Seats</span>
           <span className="text-xl font-bold text-purple-400 mt-1 block">{systemMetrics.pendingEnrollmentsCount}</span>
         </div>
         <div className="border border-white/5 bg-[#0d0d12] p-4 rounded-sm border-emerald-500/20 bg-emerald-500/[0.01]">
-          <span className="text-[10px] text-emerald-400 uppercase tracking-wider block">Approved Class Seats</span>
+          <span className="text-[10px] text-emerald-400 uppercase tracking-wider block">Active Seats</span>
           <span className="text-xl font-bold text-emerald-400 mt-1 block">{systemMetrics.activeEnrollmentsCount}</span>
         </div>
-        {/* Blue Customer Support Metrics Widget */}
+        {/* SCHOLARSHIP METRIC CARD */}
+        <div className="border border-red-500/30 bg-red-500/[0.02] p-4 rounded-sm">
+          <span className="text-[10px] text-red-400 uppercase tracking-wider block">Pending Scholars</span>
+          <span className="text-xl font-bold text-red-400 mt-1 block">{systemMetrics.pendingScholarsCount}</span>
+        </div>
         <div className="border border-blue-500/20 bg-blue-500/[0.02] p-4 rounded-sm">
           <span className="text-[10px] text-blue-400 uppercase tracking-wider block">Support Inquiries</span>
           <span className="text-xl font-bold text-blue-400 mt-1 block">{systemMetrics.contactMessagesCount}</span>
@@ -365,18 +409,28 @@ function AdminDashboardContent() {
       </div>
 
       {/* Tab Selectors */}
-      <div className="flex border-b border-white/5">
+      <div className="flex border-b border-white/5 overflow-x-auto">
         <button
           onClick={() => setActiveTab('users')}
-          className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all font-mono border-t border-x ${
+          className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all font-mono border-t border-x whitespace-nowrap ${
             activeTab === 'users' ? 'bg-white text-black border-white' : 'bg-transparent text-slate-500 border-transparent hover:text-slate-300'
           }`}
         >
           Identity Registries
         </button>
         <button
+          onClick={() => setActiveTab('scholarships')}
+          className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all font-mono border-t border-x whitespace-nowrap ${
+            activeTab === 'scholarships' 
+              ? 'bg-red-600 text-white border-red-600' 
+              : 'bg-transparent text-red-400/90 border-transparent hover:text-red-300 hover:bg-red-950/20'
+          }`}
+        >
+          Scholarship Applicants ({systemMetrics.pendingScholarsCount})
+        </button>
+        <button
           onClick={() => setActiveTab('approvals')}
-          className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all font-mono border-t border-x ${
+          className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all font-mono border-t border-x whitespace-nowrap ${
             activeTab === 'approvals' ? 'bg-white text-black border-white' : 'bg-transparent text-slate-500 border-transparent hover:text-slate-300'
           }`}
         >
@@ -384,7 +438,7 @@ function AdminDashboardContent() {
         </button>
         <button
           onClick={() => setActiveTab('enrollments')}
-          className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all font-mono border-t border-x ${
+          className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all font-mono border-t border-x whitespace-nowrap ${
             activeTab === 'enrollments' ? 'bg-white text-black border-white' : 'bg-transparent text-slate-500 border-transparent hover:text-slate-300'
           }`}
         >
@@ -392,16 +446,15 @@ function AdminDashboardContent() {
         </button>
         <button
           onClick={() => setActiveTab('active_classes')}
-          className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all font-mono border-t border-x ${
+          className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all font-mono border-t border-x whitespace-nowrap ${
             activeTab === 'active_classes' ? 'bg-white text-black border-white' : 'bg-transparent text-slate-500 border-transparent hover:text-slate-300'
           }`}
         >
           Active Classrooms ({systemMetrics.activeEnrollmentsCount})
         </button>
-        {/* NEW TAB: Customer Service Messages (Blue Accented) */}
         <button
           onClick={() => setActiveTab('customer_service')}
-          className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all font-mono border-t border-x ${
+          className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all font-mono border-t border-x whitespace-nowrap ${
             activeTab === 'customer_service' 
               ? 'bg-blue-600 text-white border-blue-600' 
               : 'bg-transparent text-blue-400/80 border-transparent hover:text-blue-300 hover:bg-blue-950/20'
@@ -411,7 +464,7 @@ function AdminDashboardContent() {
         </button>
       </div>
 
-      {/* Tables Sub-Matrices */}
+      {/* Tab Panels */}
       <div className="pt-2">
         {activeTab === 'users' && (
           <div className="space-y-4">
@@ -462,6 +515,85 @@ function AdminDashboardContent() {
           </div>
         )}
 
+        {/* SCHOLARSHIP STUDENTS REGISTRY TAB */}
+        {activeTab === 'scholarships' && (
+          <div className="space-y-4">
+            <h3 className="text-xs font-bold font-mono uppercase text-red-400 tracking-wider">Scholarship Applicant Verification Pipeline</h3>
+            <div className="overflow-x-auto border border-red-500/20 bg-[#0d0d12] rounded-sm">
+              <table className="w-full text-left font-mono text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-red-500/20 bg-red-500/[0.02] text-slate-400 uppercase text-[9px] tracking-widest">
+                    <th className="p-4 font-semibold">Scholar Full Name</th>
+                    <th className="p-4 font-semibold">Contact & UID</th>
+                    <th className="p-4 font-semibold">Scholarship Grant Amount</th>
+                    <th className="p-4 font-semibold">Verification Status</th>
+                    <th className="p-4 font-semibold text-right">Admin Verification Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {scholarshipStudents.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" className="p-8 text-center text-slate-600 text-[11px]">
+                        No scholarship applicants currently logged in database.
+                      </td>
+                    </tr>
+                  ) : (
+                    scholarshipStudents.map((scholar) => (
+                      <tr key={scholar.id} className="hover:bg-red-500/[0.01] transition-colors">
+                        <td className="p-4 font-bold text-white uppercase text-[11px] border-l-2 border-red-500/40 pl-4">
+                          {scholar.full_name || 'Unnamed Scholar'}
+                        </td>
+                        <td className="p-4">
+                          <div className="text-[10px] text-red-300 font-mono select-all">{scholar.email}</div>
+                          <div className="text-[9px] text-slate-600 font-mono mt-0.5 select-all truncate max-w-[120px]">
+                            UID: {scholar.user_id}
+                          </div>
+                        </td>
+                        <td className="p-4 font-bold text-emerald-400 text-[11px]">
+                          {scholar.currency || 'USD'} {Number(scholar.scholarship_amount || 0).toLocaleString()}
+                        </td>
+                        <td className="p-4">
+                          {scholar.status === 'verified' ? (
+                            <span className="px-2 py-0.5 rounded-sm bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-bold uppercase tracking-wider">
+                              ✓ VERIFIED
+                            </span>
+                          ) : scholar.status === 'rejected' ? (
+                            <span className="px-2 py-0.5 rounded-sm bg-red-500/10 text-red-400 border border-red-500/20 text-[9px] font-bold uppercase tracking-wider">
+                              ✕ REJECTED
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-sm bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[9px] font-bold uppercase tracking-wider animate-pulse">
+                              ⏳ PENDING APPROVAL
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-4 text-right space-x-2 whitespace-nowrap">
+                          {scholar.status !== 'verified' && (
+                            <button 
+                              onClick={() => handleVerifyScholar(scholar.id, scholar.email, scholar.full_name, 'verified')} 
+                              className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[9px] font-bold uppercase tracking-wider rounded-sm transition-all"
+                            >
+                              Verify & Send Access Email
+                            </button>
+                          )}
+                          {scholar.status !== 'rejected' && (
+                            <button 
+                              onClick={() => handleVerifyScholar(scholar.id, scholar.email, scholar.full_name, 'rejected')} 
+                              className="px-3 py-1 bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 text-[9px] font-bold uppercase tracking-wider rounded-sm transition-all"
+                            >
+                              Reject
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'approvals' && (
           <div className="space-y-4">
             <h3 className="text-xs font-bold font-mono uppercase text-slate-400 tracking-wider">Course Blueprint Catalog</h3>
@@ -486,9 +618,7 @@ function AdminDashboardContent() {
                     pendingCourses.map((course) => (
                       <tr key={course.id} className="hover:bg-white/[0.01] transition-colors">
                         <td className="p-4 text-blue-400 font-mono text-[11px] select-all uppercase tracking-wider">{course.id}</td>
-                        <td className="p-4 font-bold text-white uppercase text-[11px]">
-                          {course.title}
-                        </td>
+                        <td className="p-4 font-bold text-white uppercase text-[11px]">{course.title}</td>
                         <td className="p-4 text-slate-400 uppercase text-[10px]">{course.category}</td>
                         <td className="p-4">
                           <span className="text-emerald-400 font-bold block text-[11px]">
@@ -571,7 +701,6 @@ function AdminDashboardContent() {
           </div>
         )}
 
-        {/* Active Classrooms Tab */}
         {activeTab === 'active_classes' && (
           <div className="space-y-4">
             <h3 className="text-xs font-bold font-mono uppercase text-slate-400 tracking-wider">Active Approved Enrollments Matrix</h3>
@@ -620,7 +749,6 @@ function AdminDashboardContent() {
           </div>
         )}
 
-        {/* CUSTOMER SERVICE SUPPORT MODULE - SIDE BY SIDE LAYOUT */}
         {activeTab === 'customer_service' && (
           <div className="space-y-4">
             <h3 className="text-xs font-bold font-mono uppercase text-blue-400 tracking-wider">Contact Inquiries & Support Tickets</h3>
@@ -640,14 +768,11 @@ function AdminDashboardContent() {
                   ) : (
                     contactMessages.map((msg) => (
                       <tr key={msg.id} className="hover:bg-blue-500/[0.01] transition-colors align-top">
-                        
-                        {/* LEFT COLUMN: Sender details, Inquiry details, Resolve Indicator */}
                         <td className="p-4 border-l-2 border-blue-500/40 space-y-3">
                           <div>
                             <div className="font-bold text-white uppercase text-[11px]">{msg.name || 'Anonymous'}</div>
                             <div className="text-[10px] text-blue-400 font-mono tracking-tight mt-0.5 select-all">{msg.email}</div>
                           </div>
-
                           <div className="flex flex-wrap gap-2 pt-1">
                             {msg.inquiry_type && (
                               <span className="px-2 py-0.5 rounded-sm bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[9px] font-bold uppercase">
@@ -660,9 +785,7 @@ function AdminDashboardContent() {
                               </span>
                             )}
                           </div>
-
                           <div className="flex items-center gap-3 pt-2">
-                            {/* Dynamic Resolution status pill indicator */}
                             {msg.resolution === 'resolved' ? (
                               <span className="px-2 py-0.5 rounded-sm bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-bold uppercase tracking-wider">
                                 ✓ RESOLVED
@@ -677,13 +800,10 @@ function AdminDashboardContent() {
                             </span>
                           </div>
                         </td>
-
-                        {/* RIGHT COLUMN: Message body with Save as Resolved action placed natively underneath */}
                         <td className="p-4 space-y-4">
                           <p className="text-[11px] text-slate-300 font-sans leading-relaxed break-words whitespace-pre-line">
                             {msg.message || 'No written content submitted.'}
                           </p>
-
                           <div className="pt-2 border-t border-white/5">
                             {msg.resolution !== 'resolved' ? (
                               <button 
@@ -699,7 +819,6 @@ function AdminDashboardContent() {
                             )}
                           </div>
                         </td>
-
                       </tr>
                     ))
                   )}
@@ -727,7 +846,6 @@ function AdminDashboardContent() {
               </button>
             </div>
 
-            {/* Upload Progress Pipeline Bar */}
             {uploadProgress.percent > 0 && (
               <div className="p-3 border border-blue-500/20 bg-blue-500/5 rounded-sm space-y-2">
                 <div className="flex justify-between text-[10px] uppercase font-bold tracking-wider">
@@ -742,7 +860,7 @@ function AdminDashboardContent() {
 
             <form onSubmit={handleCreateCourseSubmit} className="space-y-4 text-xs">
               <div className="space-y-1">
-                <label className="text-[10px] text-slate-400 uppercase tracking-wider">Course ID Code (Workspace String)</label>
+                <label className="text-[10px] text-slate-400 uppercase tracking-wider">Course ID Code</label>
                 <input 
                   required
                   type="text" 
@@ -767,7 +885,7 @@ function AdminDashboardContent() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] text-slate-400 uppercase tracking-wider">Classification Category</label>
+                  <label className="text-[10px] text-slate-400 uppercase tracking-wider">Category</label>
                   <select 
                     value={formData.category}
                     onChange={e => setFormData({...formData, category: e.target.value})}
@@ -806,7 +924,7 @@ function AdminDashboardContent() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] text-slate-400 uppercase tracking-wider">Short Framework Summary</label>
+                <label className="text-[10px] text-slate-400 uppercase tracking-wider">Short Summary</label>
                 <textarea 
                   rows="3"
                   placeholder="Provide module overview structures..."
