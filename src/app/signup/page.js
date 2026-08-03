@@ -12,6 +12,12 @@ export default function SignUp() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('student'); // 'student' or 'instructor'
+  
+  // Scholarship States
+  const [isScholar, setIsScholar] = useState(false);
+  const [scholarshipAmount, setScholarshipAmount] = useState('');
+  const [currency, setCurrency] = useState('USD');
+  
   const [loading, setLoading] = useState(false);
 
   const backgroundSlideshow = [
@@ -32,17 +38,26 @@ export default function SignUp() {
   const handleSignUpSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+
+    const isScholarStudent = role === 'student' && isScholar;
     
+    // Redirect URL embedded inside the email confirmation link
+    const redirectUrl = isScholarStudent
+      ? `${window.location.origin}/scholarship-pending`
+      : `${window.location.origin}/welcome`;
+
     const { data, error } = await supabase.auth.signUp({
       email: email,
       password: password,
       options: {
-        // Passing data down to metadata metadata stream for the SQL trigger to grab
         data: { 
           full_name: fullName,
-          is_instructor: role === 'instructor' 
+          is_instructor: role === 'instructor',
+          is_scholar: isScholarStudent,
+          scholarship_amount: isScholarStudent ? parseFloat(scholarshipAmount) || 0 : null,
+          currency: isScholarStudent ? currency : null,
         }, 
-        emailRedirectTo: `${window.location.origin}/welcome`,
+        emailRedirectTo: redirectUrl,
       },
     });
 
@@ -51,7 +66,11 @@ export default function SignUp() {
     if (error) {
       alert(error.message);
     } else {
-      router.push('/verify-email');
+      if (isScholarStudent) {
+        router.push('/verify-email-scholarship');
+      } else {
+        router.push('/verify-email');
+      }
     }
   };
 
@@ -108,7 +127,7 @@ export default function SignUp() {
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
-              onClick={() => setRole('student')}
+              onClick={() => { setRole('student'); }}
               className={`py-2.5 text-xs font-bold uppercase tracking-wider transition-all border ${
                 role === 'student' 
                   ? 'bg-white text-black border-white' 
@@ -119,7 +138,7 @@ export default function SignUp() {
             </button>
             <button
               type="button"
-              onClick={() => setRole('instructor')}
+              onClick={() => { setRole('instructor'); setIsScholar(false); }}
               className={`py-2.5 text-xs font-bold uppercase tracking-wider transition-all border ${
                 role === 'instructor' 
                   ? 'bg-red-600 text-white border-red-600 shadow-lg shadow-red-600/20' 
@@ -167,6 +186,63 @@ export default function SignUp() {
               className="w-full rounded-none border border-white/10 bg-white/5 px-4 py-3 text-xs text-white placeholder-slate-500 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 transition-all"
             />
           </div>
+
+          {/* SCHOLARSHIP SECTION FOR STUDENTS */}
+          {role === 'student' && (
+            <div className="space-y-3 pt-2 border-t border-white/10">
+              <div className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  id="isScholarCheckbox"
+                  checked={isScholar}
+                  onChange={(e) => setIsScholar(e.target.checked)}
+                  className="w-4 h-4 rounded-none accent-red-600 bg-white/5 border-white/20 focus:ring-0"
+                />
+                <label htmlFor="isScholarCheckbox" className="text-xs font-semibold text-slate-200 cursor-pointer select-none">
+                  Are you a scholarship student?
+                </label>
+              </div>
+
+              {isScholar && (
+                <div className="p-3 bg-white/5 border border-white/10 space-y-3 animate-fadeIn">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-red-400 block">
+                    Scholarship Details
+                  </span>
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="col-span-1 space-y-1">
+                      <label className="text-[9px] font-bold uppercase text-slate-400">Currency</label>
+                      <select
+                        value={currency}
+                        onChange={(e) => setCurrency(e.target.value)}
+                        className="w-full rounded-none border border-white/10 bg-slate-900 px-2 py-2.5 text-xs text-white focus:border-red-500 focus:outline-none"
+                      >
+                        <option value="USD">USD ($)</option>
+                        <option value="EUR">EUR (€)</option>
+                        <option value="GBP">GBP (£)</option>
+                        <option value="NGN">NGN (₦)</option>
+                        <option value="CAD">CAD ($)</option>
+                      </select>
+                    </div>
+
+                    <div className="col-span-2 space-y-1">
+                      <label className="text-[9px] font-bold uppercase text-slate-400">Award Amount</label>
+                      <input
+                        required={isScholar}
+                        type="number"
+                        min="0"
+                        step="any"
+                        value={scholarshipAmount}
+                        onChange={(e) => setScholarshipAmount(e.target.value)}
+                        placeholder="5000"
+                        className="w-full rounded-none border border-white/10 bg-white/5 px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:border-red-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <button 
             type="submit" 
