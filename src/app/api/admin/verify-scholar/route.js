@@ -52,7 +52,7 @@ export async function POST(req) {
     // 2. If action is 'verified', dispatch the automated congratulatory email
     if (action === 'verified' && email) {
       await resend.emails.send({
-        from: 'Ornate Education <admissions@ornateeducation.com>',
+        from: 'Ornate Education <admissions@ornatetechschool.top>',
         to: [email],
         subject: '🎉 Scholarship Verification Approved - Access Granted!',
         html: `
@@ -68,7 +68,7 @@ export async function POST(req) {
               <p style="margin: 0; color: #10b981; font-weight: bold; font-size: 14px;">Status: VERIFIED & APPROVED</p>
               <p style="margin: 8px 0 0 0; color: #9ca3af; font-size: 12px;">You can now log in to access your course portal and learning dashboard.</p>
             </div>
-            <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://yourdomain.com'}/login" 
+            <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://ornatetechschool.top'}/login" 
                style="display: inline-block; background-color: #dc2626; color: #ffffff; text-decoration: none; padding: 12px 24px; font-weight: bold; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">
               Log In To Portal Now
             </a>
