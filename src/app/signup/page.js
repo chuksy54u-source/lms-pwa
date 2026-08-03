@@ -51,7 +51,9 @@ export default function SignUp() {
       password: password,
       options: {
         data: { 
+          email: email, // Explicitly pass email to metadata
           full_name: fullName,
+          role: role,
           is_instructor: role === 'instructor',
           is_scholar: isScholarStudent,
           scholarship_amount: isScholarStudent ? parseFloat(scholarshipAmount) || 0 : null,

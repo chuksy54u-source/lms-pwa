@@ -33,51 +33,60 @@ export default function Login() {
     setLoading(true);
     setErrorMessage('');
 
-    // 1. Authenticate user credentials
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password,
-    });
-
-    if (error) {
-      setErrorMessage(error.message);
-      setLoading(false);
-      return;
-    }
-
     try {
-      // 2. Query profile for user role & scholar flag
-      const { data: profile, error: profileError } = await supabase
+      // 1. Authenticate user credentials
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password,
+      });
+
+      if (authError || !authData?.user) {
+        setErrorMessage(authError?.message || 'Invalid login credentials.');
+        setLoading(false);
+        return;
+      }
+
+      const userId = authData.user.id;
+      const userEmail = authData.user.email;
+
+      // 2. Query scholarship_students directly by user_id OR email
+      const { data: scholarRecord, error: scholarErr } = await supabase
+        .from('scholarship_students')
+        .select('id, status, user_id')
+        .or(`user_id.eq.${userId},email.eq.${userEmail}`)
+        .maybeSingle();
+
+      if (scholarErr) {
+        console.error("Scholarship query fault:", scholarErr.message);
+      }
+
+      // 3. BLOCK ACCESS if a scholarship record exists and status IS NOT 'verified'
+      if (scholarRecord && scholarRecord.status !== 'verified') {
+        // Revoke active auth session immediately
+        await supabase.auth.signOut();
+        setLoading(false);
+        
+        // Redirect unverified scholar
+        router.replace('/scholarship-pending');
+        return;
+      }
+
+      // Optional: Auto-link user_id if it wasn't linked previously
+      if (scholarRecord && !scholarRecord.user_id) {
+        await supabase
+          .from('scholarship_students')
+          .update({ user_id: userId })
+          .eq('id', scholarRecord.id);
+      }
+
+      // 4. Check user profile for system permissions
+      const { data: profile } = await supabase
         .from('profiles')
-        .select('is_instructor, is_scholar')
-        .eq('id', data.user.id)
+        .select('is_instructor')
+        .eq('id', userId)
         .single();
 
-      if (profileError) {
-        throw profileError;
-      }
-
-      // 3. Check scholarship status if user is a scholar student
-      if (profile?.is_scholar) {
-        const { data: scholarRecord } = await supabase
-          .from('scholarship_students')
-          .select('status')
-          .eq('user_id', data.user.id)
-          .maybeSingle();
-
-        // Block login if record doesn't exist yet or status is not 'verified'
-        if (!scholarRecord || scholarRecord.status !== 'verified') {
-          // Immediately revoke session
-          await supabase.auth.signOut();
-          setLoading(false);
-          
-          // Redirect to administrative pending page
-          router.push('/scholarship-pending');
-          return;
-        }
-      }
-
-      // 4. Access Granted -> Redirect based on role
+      // 5. Access Granted -> Redirect based on role
       setLoading(false);
       if (profile?.is_instructor) {
         router.push('/dashboard/instructor');
@@ -86,8 +95,10 @@ export default function Login() {
       }
 
     } catch (err) {
+      console.error("Login verification fault:", err);
+      await supabase.auth.signOut();
       setLoading(false);
-      setErrorMessage('An unexpected error occurred while verifying profile status.');
+      setErrorMessage('An unexpected error occurred during account verification.');
     }
   };
 
