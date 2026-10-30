@@ -1,20 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { createClient } from '@/utils/supabase/client';
 
 export default function DashboardLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
-  
-  // Keep supabase instance stable using a ref to prevent unnecessary instantiations
-  const supabaseRef = useRef(null);
-  if (!supabaseRef.current) {
-    supabaseRef.current = createClient();
-  }
-  const supabase = supabaseRef.current;
   
   const [userName, setUserName] = useState('Loading...');
   const [userEmail, setUserEmail] = useState('');
@@ -44,40 +36,33 @@ export default function DashboardLayout({ children }) {
     const fetchUserSessionAndRoles = async () => {
       try {
         setCheckingAuth(true);
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        const res = await fetch('/api/v1/auth/me');
         
-        if (userError || !user) {
+        if (!res.ok) {
           if (isCurrentRequest) {
             router.push('/login');
           }
           return;
         }
 
+        const data = await res.json();
+        const user = data.user || data;
+
         if (!isCurrentRequest) return;
 
         setUserEmail(user.email || '');
 
         // Resolve Display Name with a clean fallback chain
-        let nameToDisplay = user.user_metadata?.full_name;
+        let nameToDisplay = user.full_name || user.name || user.user_metadata?.full_name;
         if (!nameToDisplay && user.email) {
           const emailPrefix = user.email.split('@')[0];
           nameToDisplay = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
         }
         setUserName(nameToDisplay || 'User');
 
-        // Fetch permissions safely from public profile
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('is_instructor, is_admin')
-          .eq('id', user.id)
-          .maybeSingle(); // Prevents throwing 406 errors on blank profile rows
-
-        if (profileError) {
-          console.error('Failed to resolve database security clear profile:', profileError.message);
-        }
-
-        const userIsAdmin = !!profile?.is_admin;
-        const userIsInstructor = !!profile?.is_instructor;
+        const role = user.role || data.role;
+        const userIsAdmin = role === 'platform_admin' || role === 'school_admin' || !!user.is_admin;
+        const userIsInstructor = role === 'teacher' || role === 'instructor' || !!user.is_instructor;
 
         if (isCurrentRequest) {
           setPrivileges({
@@ -118,11 +103,11 @@ export default function DashboardLayout({ children }) {
     return () => {
       isCurrentRequest = false;
     };
-  }, [router, pathname, supabase]);
+  }, [router, pathname]);
 
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut();
+      await fetch('/api/v1/auth/signout', { method: 'POST' }).catch(() => {});
     } catch (err) {
       console.error('Error during sign out procedure:', err);
     } finally {
@@ -203,6 +188,14 @@ export default function DashboardLayout({ children }) {
           }`}
         >
           Courses
+        </Link>
+        <Link 
+          href="/dashboard/playground" 
+          className={`block px-3 py-2 text-xs font-bold uppercase tracking-wider transition-all ${
+            pathname.startsWith('/dashboard/playground') ? 'bg-white text-black' : 'text-slate-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          Playground
         </Link>
         <Link 
           href="/dashboard/certificates" 

@@ -2,11 +2,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/utils/supabase/client'; 
 
 export default function Login() {
   const router = useRouter();
-  const supabase = createClient();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,61 +32,40 @@ export default function Login() {
     setErrorMessage('');
 
     try {
-      // 1. Authenticate user credentials
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: password,
+      // TODO: Implement login using the documented Bearilly school provider flow.
+      // Note: A direct password-login endpoint is not currently in the verified Bearilly API map.
+      // We use the documented session handling contract to authenticate the user.
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password }),
       });
 
-      if (authError || !authData?.user) {
-        setErrorMessage(authError?.message || 'Invalid login credentials.');
-        setLoading(false);
-        return;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Invalid login credentials.');
       }
 
-      const userId = authData.user.id;
-      const userEmail = authData.user.email;
-
-      // 2. Query scholarship_students directly by user_id OR email
-      const { data: scholarRecord, error: scholarErr } = await supabase
-        .from('scholarship_students')
-        .select('id, status, user_id')
-        .or(`user_id.eq.${userId},email.eq.${userEmail}`)
-        .maybeSingle();
-
-      if (scholarErr) {
-        console.error("Scholarship query fault:", scholarErr.message);
+      // 1. Verify session and get user details from Bearilly System of Record
+      const meRes = await fetch('/api/v1/auth/me');
+      if (!meRes.ok) {
+        throw new Error('Failed to verify session with Bearilly.');
       }
+      
+      const userData = await meRes.json();
+      // userData expected structure: { id, email, roles: [], status: '...' }
 
-      // 3. BLOCK ACCESS if a scholarship record exists and status IS NOT 'verified'
-      if (scholarRecord && scholarRecord.status !== 'verified') {
-        // Revoke active auth session immediately
-        await supabase.auth.signOut();
-        setLoading(false);
-        
-        // Redirect unverified scholar
+      // 2. BLOCK ACCESS if the student record status IS NOT 'verified'
+      // Bearilly becomes the system of record for enrolment/scholarship status
+      if (userData.status !== 'verified' && userData.roles.includes('student')) {
+        // Redirect unverified student
         router.replace('/scholarship-pending');
         return;
       }
 
-      // Optional: Auto-link user_id if it wasn't linked previously
-      if (scholarRecord && !scholarRecord.user_id) {
-        await supabase
-          .from('scholarship_students')
-          .update({ user_id: userId })
-          .eq('id', scholarRecord.id);
-      }
-
-      // 4. Check user profile for system permissions
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('is_instructor')
-        .eq('id', userId)
-        .single();
-
-      // 5. Access Granted -> Redirect based on role
+      // 3. Access Granted -> Redirect based on Bearilly roles
       setLoading(false);
-      if (profile?.is_instructor) {
+      if (userData.roles.includes('teacher') || userData.roles.includes('school_admin')) {
         router.push('/dashboard/instructor');
       } else {
         router.push('/dashboard');
@@ -96,9 +73,8 @@ export default function Login() {
 
     } catch (err) {
       console.error("Login verification fault:", err);
-      await supabase.auth.signOut();
       setLoading(false);
-      setErrorMessage('An unexpected error occurred during account verification.');
+      setErrorMessage(err.message || 'An unexpected error occurred during account verification.');
     }
   };
 
@@ -194,9 +170,16 @@ export default function Login() {
           </button>
         </form>
 
-        <div className="text-center text-xs text-slate-400 pt-2 border-t border-white/5">
-          Don&apos;t have an account?{' '}
-          <Link href="/signup" className="text-blue-400 font-bold hover:underline">Sign Up</Link>
+        <div className="text-center text-xs text-slate-400 pt-2 border-t border-white/5 flex flex-col gap-3">
+          <div>
+            Don&apos;t have an account?{' '}
+            <Link href="/signup" className="text-blue-400 font-bold hover:underline">Sign Up</Link>
+          </div>
+          <div className="pt-2 border-t border-white/5">
+            <Link href="/playground" className="text-emerald-400 font-bold uppercase tracking-widest hover:text-white transition-colors">
+              Explore Playground
+            </Link>
+          </div>
         </div>
       </div>
     </div>
