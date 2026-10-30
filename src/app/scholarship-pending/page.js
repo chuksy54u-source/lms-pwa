@@ -1,8 +1,13 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
 
 export default function ScholarshipPending() {
+  const searchParams = useSearchParams();
+  const token = searchParams.get('token');
+  const [status, setStatus] = useState('pending');
+  const [error, setError] = useState(null);
+
   const backgroundSlideshow = [
     'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1600&auto=format&fit=crop&q=80',
     'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1600&auto=format&fit=crop&q=80',
@@ -103,5 +108,13 @@ export default function ScholarshipPending() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ScholarshipPending() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black" />}>
+      <ScholarshipPendingContent />
+    </Suspense>
   );
 }
