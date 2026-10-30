@@ -32,9 +32,11 @@ export default function Login() {
     setErrorMessage('');
 
     try {
-      // TODO: Implement login using the documented Bearilly school provider flow.
-      // Note: A direct password-login endpoint is not currently in the verified Bearilly API map.
-      // We use the documented session handling contract to authenticate the user.
+      // TODO: Use school's existing Auth provider (e.g. Supabase) to verify credentials.
+      // After successful verification, call the server-side exchange endpoint:
+      // POST /api/v1/students/:id/session
+      // Then store the returned short-lived token for Bearilly API calls.
+      
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -42,29 +44,12 @@ export default function Login() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Invalid login credentials.');
+        throw new Error('Invalid login credentials.');
       }
 
-      // 1. Verify session and get user details from Bearilly System of Record
-      const meRes = await fetch('/api/v1/auth/me');
-      if (!meRes.ok) {
-        throw new Error('Failed to verify session with Bearilly.');
-      }
-      
-      const userData = await meRes.json();
-      // userData expected structure: { id, email, roles: [], status: '...' }
+      const userData = await response.json();
 
-      // 2. BLOCK ACCESS if the student record status IS NOT 'verified'
-      // Bearilly becomes the system of record for enrolment/scholarship status
-      if (userData.status !== 'verified' && userData.roles.includes('student')) {
-        // Redirect unverified student
-        router.replace('/scholarship-pending');
-        return;
-      }
-
-      // 3. Access Granted -> Redirect based on Bearilly roles
-      setLoading(false);
+      // Redirect based on roles
       if (userData.roles.includes('teacher') || userData.roles.includes('school_admin')) {
         router.push('/dashboard/instructor');
       } else {
@@ -126,7 +111,6 @@ export default function Login() {
           </p>
         </div>
 
-        {/* ERROR DISPLAY */}
         {errorMessage && (
           <div className="p-3 bg-red-600/20 border border-red-500/40 text-red-300 text-xs font-mono">
             {errorMessage}

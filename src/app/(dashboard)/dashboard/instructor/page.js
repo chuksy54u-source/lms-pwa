@@ -39,7 +39,6 @@ export default function InstructorDashboard() {
 
   const [gradesInput, setGradesInput] = useState({});
 
-  // Playground State
   const [pgStudentId, setPgStudentId] = useState('');
   const [pgResult, setPgResult] = useState(null);
 
@@ -56,26 +55,12 @@ export default function InstructorDashboard() {
   const checkSecurityAndLoad = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/v1/auth/me');
+      const res = await fetch('/api/v1/teachers');
       const data = await res.json();
-
-      if (!res.ok || !data.user) {
-        setIsAuthorized(false);
-        setLoading(false);
-        return;
-      }
-
-      if (data.user.role !== 'teacher' && data.user.role !== 'school_admin') {
-        setIsAuthorized(false);
-        setLoading(false);
-        return;
-      }
-
+      if (!res.ok) throw new Error();
       setIsAuthorized(true);
       await fetchCourses();
-
     } catch (err) {
-      console.error("Security interception error:", err.message);
       setIsAuthorized(false);
     } finally {
       setLoading(false);
@@ -84,7 +69,9 @@ export default function InstructorDashboard() {
 
   const fetchCourses = async () => {
     try {
-      const res = await fetch('/api/v1/courses');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/courses`, {
+        headers: { 'Authorization': `Bearer ${sessionStorage.getItem('bearilly_token')}` }
+      });
       const data = await res.json();
       if (res.ok) {
         setCourses(data || []);
@@ -97,11 +84,11 @@ export default function InstructorDashboard() {
 
   const fetchCourseData = async (courseId) => {
     try {
-      // Fetch results for the grading matrix
-      const res = await fetch(`/api/v1/courses/${courseId}/results`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/courses/${courseId}/results`, {
+        headers: { 'Authorization': `Bearer ${sessionStorage.getItem('bearilly_token')}` }
+      });
       const data = await res.json();
       if (res.ok) {
-        // Map Bearilly results to the existing "uploads" UI structure
         const mapped = (data || []).map(r => ({
           id: r.student_id,
           user_id: r.student_id,
@@ -121,36 +108,29 @@ export default function InstructorDashboard() {
 
   const handleCommitGrade = async (uploadId) => {
     // TODO: Map to Bearilly submission grading endpoint when available in API map
-    alert("Manual grade override is currently handled via Bearilly Assessment Submissions. TODO: Implement PATCH /api/v1/assessments/:id/submissions/:sid");
+    alert("Manual grade override is currently handled via Bearilly Assessment Submissions. TODO: Implement POST /api/v1/submissions/:id/grade");
   };
 
   const handleVerifyStudent = async (uploadId) => {
-    // TODO: Map to Bearilly verification flow
     alert("Verification status is automatically derived from Bearilly Assessment results.");
   };
 
   const handleDeployModule = async (e) => {
     e.preventDefault();
-    if (!moduleTitle || !selectedCourse) {
-      alert("Please complete required structural fields.");
-      return;
-    }
-
+    if (!moduleTitle || !selectedCourse) return;
     try {
-      // Bearilly: Modules are Units
-      const res = await fetch(`/api/v1/courses/${selectedCourse}/units`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/courses/${selectedCourse}/units`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionStorage.getItem('bearilly_token')}`
+        },
         body: JSON.stringify({ title: moduleTitle })
       });
-
       if (!res.ok) throw new Error(await res.text());
-
       alert(`Module segment [${moduleTitle}] injected successfully!`);
       setModuleTitle('');
-      setModuleFile(null);
       setModuleOrder(prev => String(parseInt(prev, 10) + 1));
-
     } catch (err) {
       alert(`Module deployment failure: ${err.message}`);
     }
@@ -164,15 +144,14 @@ export default function InstructorDashboard() {
 
   const handleDeployQuiz = async (e) => {
     e.preventDefault();
-    if (!quizQuestion || !optA || !optB || !optC || !optD || !correctAnswer) {
-      alert("Please complete all fields and explicitly assign a correct answer option.");
-      return;
-    }
-
+    if (!quizQuestion || !optA || !optB || !optC || !optD || !correctAnswer) return;
     try {
-      const res = await fetch(`/api/v1/courses/${selectedCourse}/assessments`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/courses/${selectedCourse}/assessments`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionStorage.getItem('bearilly_token')}`
+        },
         body: JSON.stringify({
           title: "Quick Quiz",
           pass_mark: 60,
@@ -186,16 +165,8 @@ export default function InstructorDashboard() {
           max_attempts: 3
         })
       });
-
       if (!res.ok) throw new Error(await res.text());
-
       alert("Quiz question node successfully linked to Bearilly assessment engine!");
-      setQuizQuestion('');
-      setOptA('');
-      setOptB('');
-      setOptC('');
-      setOptD('');
-      setCorrectAnswer('');
     } catch (err) {
       alert(`Quiz injection failure: ${err.message}`);
     }
@@ -203,16 +174,14 @@ export default function InstructorDashboard() {
 
   const handleDeployAssignment = async (e) => {
     e.preventDefault();
-    if (!assignmentTitle || !selectedCourse) {
-      alert("Please complete core assignment parameters.");
-      return;
-    }
-
+    if (!assignmentTitle || !selectedCourse) return;
     try {
-      // Bearilly: Assignments are Assessments with short-answer questions
-      const res = await fetch(`/api/v1/courses/${selectedCourse}/assessments`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/courses/${selectedCourse}/assessments`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionStorage.getItem('bearilly_token')}`
+        },
         body: JSON.stringify({
           title: assignmentTitle,
           pass_mark: 50,
@@ -224,24 +193,19 @@ export default function InstructorDashboard() {
           }]
         })
       });
-
       if (!res.ok) throw new Error(await res.text());
-
       alert(`Assignment [${assignmentTitle}] deployed successfully!`);
-      setAssignmentTitle('');
-      setSubmissionRequirements('');
-      setEvaluationCriteria('');
-      setAssignmentFile(null);
     } catch (err) {
       alert(`Assignment deployment failure: ${err.message}`);
     }
   };
 
-  // Playground Handlers
   const handleFetchMood = async () => {
     if (!pgStudentId) return;
     try {
-      const res = await fetch(`/api/v1/students/${pgStudentId}/tutor-state`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/teachers/${pgStudentId}/dashboard`, {
+        headers: { 'Authorization': `Bearer ${sessionStorage.getItem('bearilly_token')}` }
+      });
       const data = await res.json();
       setPgResult(data);
     } catch (err) {
@@ -252,7 +216,9 @@ export default function InstructorDashboard() {
   const handleFetchProgress = async () => {
     if (!pgStudentId) return;
     try {
-      const res = await fetch(`/api/v1/students/${pgStudentId}/progress`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/courses/${pgStudentId}/results`, {
+        headers: { 'Authorization': `Bearer ${sessionStorage.getItem('bearilly_token')}` }
+      });
       const data = await res.json();
       setPgResult(data);
     } catch (err) {

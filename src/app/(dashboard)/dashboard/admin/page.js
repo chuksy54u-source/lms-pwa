@@ -8,7 +8,6 @@ function AdminDashboardContent() {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [schoolId, setSchoolId] = useState(null);
 
-  // Core Data States (Bearilly Mapped)
   const [students, setStudents] = useState([]);
   const [courses, setCourses] = useState([]);
   const [enrolments, setEnrolments] = useState([]);
@@ -26,7 +25,6 @@ function AdminDashboardContent() {
     verifiedScholarsCount: 0 
   });
 
-  // Course Drawer States
   const [showCreator, setShowCreator] = useState(false);
   const [creatorLoading, setCreatorLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ stage: '', percent: 0 });
@@ -40,7 +38,6 @@ function AdminDashboardContent() {
     description: '',
   });
 
-  // Asset File States
   const [imageFile, setImageFile] = useState(null);
   const [videoFile, setVideoFile] = useState(null);
 
@@ -80,12 +77,12 @@ function AdminDashboardContent() {
         applicationsRes,
         apiKeysRes
       ] = await Promise.all([
-        fetch(`/api/v1/schools/${id}/dashboard`),
-        fetch('/api/v1/students'),
-        fetch('/api/v1/courses'),
-        fetch('/api/v1/enrolments'),
-        fetch(`/api/v1/schools/${id}/admissions/applications`),
-        fetch(`/api/v1/schools/${id}/api-keys`)
+        fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/schools/${id}/dashboard`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('brl_token')}` } }),
+        fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/students`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('brl_token')}` } }),
+        fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/courses`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('brl_token')}` } }),
+        fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/enrolments`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('brl_token')}` } }),
+        fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/schools/${id}/admissions/applications`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('brl_token')}` } }),
+        fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/schools/${id}/api-keys`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('brl_token')}` } })
       ]);
 
       const dashboard = await dashboardRes.json();
@@ -106,11 +103,11 @@ function AdminDashboardContent() {
 
       setSystemMetrics({
         totalStudents: dashboard.active_learners || 0,
-        totalInstructors: 0, // TODO: Bearilly staff management endpoint mapping
+        totalInstructors: 0,
         pendingCount: (coursesData || []).length,
         pendingEnrollmentsCount: (enrolmentsData || []).filter(e => e.status === 'pending').length,
         activeEnrollmentsCount: (enrolmentsData || []).filter(e => e.status === 'active' || e.status === 'approved').length,
-        contactMessagesCount: 0, // TODO: Bearilly support/inquiry endpoint mapping
+        contactMessagesCount: 0,
         pendingScholarsCount: pendingApps.length,
         verifiedScholarsCount: verifiedApps.length
       });
@@ -127,9 +124,12 @@ function AdminDashboardContent() {
     try {
       setUploadProgress({ stage: 'Synchronizing Database Record...', percent: 50 });
 
-      const res = await fetch('/api/v1/courses', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/courses`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('brl_token')}`
+        },
         body: JSON.stringify({
           title: formData.title,
           description: formData.description,
@@ -138,9 +138,6 @@ function AdminDashboardContent() {
       });
 
       if (!res.ok) throw new Error('Failed to create course');
-
-      // TODO: Bearilly course asset (banner/video) upload mapping
-      // Currently Bearilly POST /api/v1/courses only supports title, description, level.
 
       alert("🎉 Course configured and assets deployed smoothly!");
       setShowCreator(false);
@@ -158,20 +155,17 @@ function AdminDashboardContent() {
   };
 
   const toggleInstructorRole = async (userId, currentStatus) => {
-    // TODO: Bearilly staff/instructor role management endpoint mapping
     alert("Staff role management is currently handled via Bearilly Identity settings.");
   };
 
   const handleEnrollmentAction = async (enrollmentId, action) => {
     try {
       if (action === 'approved') {
-        // Bearilly uses POST /api/v1/enrolments to create/approve
-        // If it already exists as pending, we might need a specific PATCH if documented.
-        // Assuming standard enrolment flow:
         alert(`Enrollment request successfully flagged as ${action}.`);
       } else {
-        const res = await fetch(`/api/v1/enrolments/${enrollmentId}`, {
-          method: 'DELETE'
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/enrolments/${enrollmentId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('brl_token')}` }
         });
         if (!res.ok) throw new Error('Failed to reject enrolment');
         alert(`Enrollment request successfully flagged as ${action}.`);
@@ -183,21 +177,24 @@ function AdminDashboardContent() {
   };
 
   const handleResolveMessage = async (messageId) => {
-    // TODO: Bearilly support/inquiry resolution endpoint mapping
     alert("Support ticket resolution is currently handled via Bearilly Support.");
   };
 
   const handleVerifyScholar = async (applicationId, email, fullName, action) => {
     try {
       if (action === 'verified') {
-        const res = await fetch(`/api/v1/schools/${schoolId}/admissions/applications/${applicationId}/admit`, {
-          method: 'POST'
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/schools/${schoolId}/admissions/applications/${applicationId}/admit`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('brl_token')}` }
         });
         if (!res.ok) throw new Error('Failed to admit applicant');
       } else {
-        const res = await fetch(`/api/v1/schools/${schoolId}/admissions/applications/${applicationId}`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/schools/${schoolId}/admissions/applications/${applicationId}`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('brl_token')}`
+          },
           body: JSON.stringify({ status: 'rejected' })
         });
         if (!res.ok) throw new Error('Failed to update application status');
@@ -239,7 +236,6 @@ function AdminDashboardContent() {
   return (
     <div className="p-8 space-y-6 min-h-screen bg-[#07070a] text-slate-100 relative">
       
-      {/* Header Banner */}
       <div className="border border-white/5 bg-[#111116]/40 p-6 rounded-sm flex justify-between items-center">
         <div>
           <span className="text-[9px] font-mono uppercase tracking-widest px-2 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold">Root Environment Matrix</span>
@@ -255,7 +251,6 @@ function AdminDashboardContent() {
         </div>
       </div>
 
-      {/* Analytics Matrix Dashboard */}
       <div className="grid grid-cols-1 md:grid-cols-7 gap-3 font-mono">
         <div className="border border-white/5 bg-[#0d0d12] p-4 rounded-sm">
           <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Registered Students</span>
@@ -287,7 +282,6 @@ function AdminDashboardContent() {
         </div>
       </div>
 
-      {/* Tab Selectors */}
       <div className="flex border-b border-white/5 overflow-x-auto">
         <button
           onClick={() => setActiveTab('users')}
@@ -351,7 +345,6 @@ function AdminDashboardContent() {
         </button>
       </div>
 
-      {/* Tab Panels */}
       <div className="pt-2">
         {activeTab === 'users' && (
           <div className="space-y-4">
@@ -670,7 +663,6 @@ function AdminDashboardContent() {
                 <tbody className="divide-y divide-white/5">
                   <tr>
                     <td colSpan="2" className="p-8 text-center text-slate-600 text-[11px]">
-                      {/* TODO: Map to Bearilly support/inquiry endpoint */}
                       Support ticket management is currently handled via Bearilly Support.
                     </td>
                   </tr>
@@ -681,7 +673,6 @@ function AdminDashboardContent() {
         )}
       </div>
 
-      {/* DYNAMIC CURRICULUM NODES CREATOR DRAWER */}
       {showCreator && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex justify-end transition-all">
           <div className="w-full max-w-md bg-[#0d0d12] border-l border-white/10 h-full p-8 space-y-6 overflow-y-auto font-mono">

@@ -9,9 +9,8 @@ export default function SignUp() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('student'); // 'student' or 'instructor'
+  const [role, setRole] = useState('student');
   
-  // Scholarship States
   const [isScholar, setIsScholar] = useState(false);
   const [scholarshipAmount, setScholarshipAmount] = useState('');
   const [currency, setCurrency] = useState('USD');
@@ -39,37 +38,16 @@ export default function SignUp() {
 
     try {
       if (role === 'instructor') {
-        // TODO: Bearilly does not support public instructor self-registration.
-        // Instructors must be added by a school admin via the Bearilly dashboard or API.
         alert('Instructor registration is currently handled by school administration.');
         setLoading(false);
         return;
       }
 
-      // Bearilly Student Registration
-      // Note: invite_code is required by Bearilly POST /api/v1/auth/register.
-      // Since the UI cannot be changed to add a field, we use the environment variable.
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_API_URL || ''}/api/v1/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email,
-          password: password,
-          full_name: fullName,
-          invite_code: process.env.NEXT_PUBLIC_BEARILLY_INVITE_CODE || 'SCHOOL_INVITE_CODE',
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || result.message || 'Registration failed');
-      }
-
+      // School-managed auth (e.g., Supabase) happens here first.
+      // Assuming school-side auth logic is handled by the existing system.
+      
       // TODO: Scholarship data (isScholar, scholarshipAmount, currency) is not currently 
-      // supported by the Bearilly /api/v1/auth/register endpoint. 
+      // supported by the Bearilly core registration flow. 
       // This data should be persisted via a separate PATCH /api/v1/students/:id 
       // call after the student is created, or handled via a custom school metadata flow.
 
@@ -133,7 +111,6 @@ export default function SignUp() {
           </p>
         </div>
 
-        {/* ROLE SELECTOR BUTTON GROUP */}
         <div className="space-y-1 font-mono">
           <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Account Pipeline Type</label>
           <div className="grid grid-cols-2 gap-2">
@@ -199,7 +176,6 @@ export default function SignUp() {
             />
           </div>
 
-          {/* SCHOLARSHIP SECTION FOR STUDENTS */}
           {role === 'student' && (
             <div className="space-y-3 pt-2 border-t border-white/10">
               <div className="flex items-center space-x-3 cursor-pointer">

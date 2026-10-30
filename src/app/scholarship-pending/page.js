@@ -3,7 +3,7 @@ import { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
-export default function ScholarshipPending() {
+function ScholarshipPendingContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
   const [status, setStatus] = useState('pending');
@@ -26,8 +26,14 @@ export default function ScholarshipPending() {
 
   useEffect(() => {
     if (token) {
-      fetch(`/api/v1/admissions/scholarship/status?token=${encodeURIComponent(token)}`)
-        .then((res) => res.json())
+      const baseUrl = process.env.NEXT_PUBLIC_BEARILLY_URL ? process.env.NEXT_PUBLIC_BEARILLY_URL.replace(/\/$/, '') : '';
+      fetch(`${baseUrl}/api/v1/admissions/scholarship/status?token=${encodeURIComponent(token)}`)
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error('Failed to fetch status');
+          }
+          return res.json();
+        })
         .then((data) => {
           if (data.status) setStatus(data.status);
         })

@@ -12,14 +12,17 @@ export default function CertificatesPage() {
     const fetchCertificates = async () => {
       setLoading(true);
       try {
-        const meRes = await fetch('/api/v1/auth/me', { credentials: 'include' });
-        if (!meRes.ok) return;
+        const bearillyUrl = process.env.NEXT_PUBLIC_BEARILLY_URL || '';
+        const token = typeof window !== 'undefined' ? (localStorage.getItem('bearilly_session_token') || localStorage.getItem('session_token')) : null;
+        const studentId = typeof window !== 'undefined' ? (localStorage.getItem('bearilly_student_id') || localStorage.getItem('student_id')) : null;
 
-        const me = await meRes.json();
-        const studentId = me.student?.id || me.student_id || me.user?.id || me.id;
-        if (!studentId) return;
+        if (!studentId) {
+          setLoading(false);
+          return;
+        }
 
-        const certsRes = await fetch(`/api/v1/students/${studentId}/certificates`, { credentials: 'include' });
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const certsRes = await fetch(`${bearillyUrl}/api/v1/students/${studentId}/certificates`, { headers });
         if (!certsRes.ok) throw new Error('Failed to fetch certificates');
 
         const certsData = await certsRes.json();
@@ -42,7 +45,8 @@ export default function CertificatesPage() {
     setVerifying(true);
     setVerifyResult(null);
     try {
-      const res = await fetch(`/api/v1/certificates/verify/${encodeURIComponent(trimmed)}`);
+      const bearillyUrl = process.env.NEXT_PUBLIC_BEARILLY_URL || '';
+      const res = await fetch(`${bearillyUrl}/api/v1/certificates/verify/${encodeURIComponent(trimmed)}`);
       if (res.ok) {
         const data = await res.json();
         setVerifyResult({ valid: true, ...data });

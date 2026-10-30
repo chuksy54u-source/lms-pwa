@@ -11,14 +11,19 @@ export default function CoursesBrowser() {
   const [actionLoading, setActionLoading] = useState(null);
 
   const categories = ['All', 'Development', 'Design', 'Data & AI', 'Security'];
+  const BEARILLY_URL = process.env.NEXT_PUBLIC_BEARILLY_URL;
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
         const [coursesRes, enrolmentsRes] = await Promise.all([
-          fetch('/api/v1/courses').then(res => res.json()),
-          fetch('/api/v1/enrolments').then(res => res.json())
+          fetch(`${BEARILLY_URL}/api/v1/courses`, {
+            headers: { 'Authorization': `Bearer ${sessionStorage.getItem('bearilly_token')}` }
+          }).then(res => res.json()),
+          fetch(`${BEARILLY_URL}/api/v1/enrolments`, {
+            headers: { 'Authorization': `Bearer ${sessionStorage.getItem('bearilly_token')}` }
+          }).then(res => res.json())
         ]);
 
         if (Array.isArray(coursesRes)) setCourses(coursesRes);
@@ -32,7 +37,7 @@ export default function CoursesBrowser() {
       }
     };
     fetchData();
-  }, []);
+  }, [BEARILLY_URL]);
 
   const handleCourseAction = async (course) => {
     if (enrolledIds.has(course.id)) {
@@ -42,9 +47,12 @@ export default function CoursesBrowser() {
 
     setActionLoading(course.id);
     try {
-      const res = await fetch('/api/v1/enrolments', {
+      const res = await fetch(`${BEARILLY_URL}/api/v1/enrolments`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionStorage.getItem('bearilly_token')}`
+        },
         body: JSON.stringify({ course_id: course.id })
       });
       

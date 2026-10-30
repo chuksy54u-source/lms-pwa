@@ -15,7 +15,6 @@ export default function LessonViewPage({ params: paramsPromise }) {
   const [isCompleting, setIsCompleting] = useState(false);
   const [hasCompletedCurrent, setHasCompletedCurrent] = useState(false);
   
-  // Playground / Tutor State
   const [question, setQuestion] = useState('');
   const [messages, setMessages] = useState([]);
   const [isAsking, setIsAsking] = useState(false);
@@ -24,55 +23,39 @@ export default function LessonViewPage({ params: paramsPromise }) {
     const fetchLessonData = async () => {
       setLoading(true);
       try {
-        // 1. Verify Auth
-        const authRes = await fetch('/api/v1/auth/me');
-        if (!authRes.ok) {
+        const bearillyUrl = process.env.NEXT_PUBLIC_BEARILLY_URL;
+        
+        const lessonRes = await fetch(`${bearillyUrl}/api/v1/lessons/${lessonId}`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('bearilly_session')}` }
+        });
+        
+        if (!lessonRes.ok) {
           router.push('/login');
           return;
         }
-
-        // 2. Fetch Course
-        const courseRes = await fetch(`/api/v1/courses/${courseId}`);
-        const courseData = await courseRes.json();
-        setCourse(courseData);
-
-        // 3. Fetch Units to find lesson by index
-        const unitsRes = await fetch(`/api/v1/courses/${courseId}/units`);
-        const unitsData = await unitsRes.json();
         
-        const allLessons = unitsData.flatMap(unit => unit.lessons || []);
-        setTotalLessons(allLessons.length);
+        const lessonData = await lessonRes.json();
+        setCurrentLesson(lessonData);
 
-        const targetIndex = parseInt(lessonId, 10) - 1;
-        const targetLessonSummary = allLessons[targetIndex];
-
-        if (targetLessonSummary) {
-          // 4. Fetch Full Lesson Details
-          const lessonRes = await fetch(`/api/v1/lessons/${targetLessonSummary.id}`);
-          const lessonData = await lessonRes.json();
-          setCurrentLesson(lessonData);
-
-          // 5. Fetch Tutor History
-          const tutorRes = await fetch(`/api/v1/tutor/messages`);
-          if (tutorRes.ok) {
-            const history = await tutorRes.json();
-            // Filter history for this specific lesson context if needed, 
-            // though Bearilly returns student's history.
-            setMessages(history.slice(-5)); 
-          }
-          
-          // Note: Bearilly progress is event-based. 
-          // We assume not completed unless we track local state or fetch specific results.
-          // For this migration, we'll trigger the 'lesson_opened' event.
-          await fetch('/api/v1/progress/events', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              kind: 'lesson_opened',
-              lesson_id: targetLessonSummary.id
-            })
-          });
+        const tutorRes = await fetch(`${bearillyUrl}/api/v1/tutor/messages`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('bearilly_session')}` }
+        });
+        if (tutorRes.ok) {
+          const history = await tutorRes.json();
+          setMessages(history.slice(-5)); 
         }
+        
+        await fetch(`${bearillyUrl}/api/v1/progress/events`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('bearilly_session')}`
+          },
+          body: JSON.stringify({
+            kind: 'lesson_opened',
+            lesson_id: lessonId
+          })
+        });
       } catch (err) {
         console.error("Error fetching lesson data:", err);
       } finally {
@@ -87,9 +70,12 @@ export default function LessonViewPage({ params: paramsPromise }) {
     if (!currentLesson) return;
     setIsCompleting(true);
     try {
-      await fetch('/api/v1/progress/events', {
+      await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/progress/events`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('bearilly_session')}`
+        },
         body: JSON.stringify({
           kind: 'lesson_completed',
           lesson_id: currentLesson.id
@@ -97,13 +83,7 @@ export default function LessonViewPage({ params: paramsPromise }) {
       });
       
       setHasCompletedCurrent(true);
-
-      const nextIndex = parseInt(lessonId, 10) + 1;
-      if (nextIndex <= totalLessons) {
-        router.push(`/dashboard/courses/${courseId}/lesson/${nextIndex}`);
-      } else {
-        router.push(`/dashboard/courses/${courseId}?status=completed`);
-      }
+      router.push(`/dashboard/courses/${courseId}/lesson/${parseInt(lessonId, 10) + 1}`);
     } catch (err) {
       console.error("Error saving progression:", err);
     } finally {
@@ -120,9 +100,12 @@ export default function LessonViewPage({ params: paramsPromise }) {
     setMessages(prev => [...prev, userMsg]);
     
     try {
-      const res = await fetch('/api/v1/tutor/ask', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/tutor/ask`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('bearilly_session')}`
+        },
         body: JSON.stringify({
           context: { lessonId: currentLesson.id },
           question: question
@@ -152,8 +135,6 @@ export default function LessonViewPage({ params: paramsPromise }) {
     );
   }
 
-  // Bearilly 'notes' can be a URL or HTML/Text. 
-  // If it's a URL, we use the iframe. If it's text, we render it in a scrollable area.
   const isUrl = currentLesson.notes?.startsWith('http');
   const isDocx = isUrl && currentLesson.notes.toLowerCase().includes('.docx');
   const iframeSrc = isDocx 
@@ -195,7 +176,6 @@ export default function LessonViewPage({ params: paramsPromise }) {
           )}
         </div>
 
-        {/* Playground / Tutor Section */}
         <div className="border border-white/10 bg-[#111116]/90 rounded-sm p-6 space-y-4">
           <div className="flex items-center space-x-2">
             <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse" />

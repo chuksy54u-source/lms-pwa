@@ -55,6 +55,7 @@ export default function CourseWorkspacePage({ params: paramsPromise }) {
 
         const authData = await authRes.json();
         const user = authData?.user || authData;
+        const sessionToken = authData?.token || authData?.session_token || user?.token;
 
         if (!user || !user.id) {
           setIsEnrolled(false);
@@ -68,8 +69,11 @@ export default function CourseWorkspacePage({ params: paramsPromise }) {
 
         const isStaff = user.role === 'school_admin' || user.role === 'teacher';
 
+        const BEARILLY_URL = process.env.NEXT_PUBLIC_BEARILLY_URL || '';
+        const headers = sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {};
+
         // Check enrollment via Bearilly enrolments endpoint
-        const enrollRes = await fetch(`/api/v1/enrolments?student_id=${user.id}&course_id=${courseId}`);
+        const enrollRes = await fetch(`${BEARILLY_URL}/api/v1/enrolments?student_id=${user.id}&course_id=${courseId}`, { headers });
         if (!enrollRes.ok && !isStaff) {
           setIsEnrolled(false);
           setLoading(false);
@@ -93,9 +97,9 @@ export default function CourseWorkspacePage({ params: paramsPromise }) {
 
         // Fetch course details, units and assessments in parallel
         const [courseRes, unitsRes, assessmentsRes] = await Promise.all([
-          fetch(`/api/v1/courses/${courseId}`),
-          fetch(`/api/v1/courses/${courseId}/units`),
-          fetch(`/api/v1/courses/${courseId}/assessments`)
+          fetch(`${BEARILLY_URL}/api/v1/courses/${courseId}`, { headers }),
+          fetch(`${BEARILLY_URL}/api/v1/courses/${courseId}/units`, { headers }),
+          fetch(`${BEARILLY_URL}/api/v1/courses/${courseId}/assessments`, { headers })
         ]);
 
         if (courseRes.ok) {
@@ -159,11 +163,12 @@ export default function CourseWorkspacePage({ params: paramsPromise }) {
             setCurrentAssessmentId(primaryAssessment.id);
 
             // Fetch questions for this assessment
-            const assessmentDetailRes = await fetch(`/api/v1/assessments/${primaryAssessment.id}`);
+            const assessmentDetailRes = await fetch(`${BEARILLY_URL}/api/v1/assessments/${primaryAssessment.id}`, { headers });
+            let questionsList = [];
             if (assessmentDetailRes.ok) {
               const detailData = await assessmentDetailRes.json();
               const fullAssessment = detailData?.assessment || detailData;
-              const questionsList = fullAssessment.questions || [];
+              questionsList = fullAssessment.questions || [];
 
               const formattedQuestions = questionsList.map((q, idx) => ({
                 id: q.id || `q-${idx}`,
@@ -175,7 +180,7 @@ export default function CourseWorkspacePage({ params: paramsPromise }) {
             }
 
             // Check if student already submitted this assessment
-            const submissionsRes = await fetch(`/api/v1/assessments/${primaryAssessment.id}/submissions`);
+            const submissionsRes = await fetch(`${BEARILLY_URL}/api/v1/assessments/${primaryAssessment.id}/submissions`, { headers });
             if (submissionsRes.ok) {
               const subData = await submissionsRes.json();
               const submissionsList = Array.isArray(subData) ? subData : subData?.submissions || [];
@@ -256,9 +261,16 @@ export default function CourseWorkspacePage({ params: paramsPromise }) {
         };
       });
 
-      const res = await fetch(`/api/v1/assessments/${currentAssessmentId}/submissions`, {
+      const BEARILLY_URL = process.env.NEXT_PUBLIC_BEARILLY_URL || '';
+      const sessionToken = typeof window !== 'undefined' ? (localStorage.getItem('bearilly_session_token') || '') : '';
+      const headers = { 'Content-Type': 'application/json' };
+      if (sessionToken) {
+        headers['Authorization'] = `Bearer ${sessionToken}`;
+      }
+
+      const res = await fetch(`${BEARILLY_URL}/api/v1/assessments/${currentAssessmentId}/submissions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ answers: answersPayload })
       });
 

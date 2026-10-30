@@ -8,7 +8,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
-    const bearillyResponse = await fetch(`${process.env.BEARILLY_API_URL}/api/v1/students/${scholarId}`, {
+    const bearillyResponse = await fetch(`${process.env.BEARILLY_URL}/api/v1/students/${scholarId}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',

@@ -17,13 +17,22 @@ export default function DashboardHome() {
     const fetchDashboardData = async () => {
       setLoading(true);
       try {
-        const meRes = await fetch('/api/v1/auth/me');
-        if (!meRes.ok) return;
-        const user = await meRes.json();
+        // School-specific auth check (e.g., Supabase)
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        // Exchange for Bearilly token
+        const tokenRes = await fetch(`/api/v1/students/${session.user.id}/session`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const { token } = await tokenRes.json();
+
+        const headers = { 'Authorization': `Bearer ${token}` };
 
         const [dashboardRes, coursesRes] = await Promise.all([
-          fetch(`/api/v1/students/${user.id}/dashboard`),
-          fetch('/api/v1/courses')
+          fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/students/${session.user.id}/dashboard`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/courses`, { headers })
         ]);
 
         const dashboard = await dashboardRes.json();

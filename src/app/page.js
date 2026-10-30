@@ -18,10 +18,15 @@ export default function Home() {
   const [bgIndex, setBgIndex] = useState(0);
   const [heroIndex, setHeroIndex] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [tenant, setTenant] = useState(null);
+  const [school, setSchool] = useState(null);
 
   useEffect(() => {
-    fetch('/api/v1/tenant').then(res => res.json()).then(data => setTenant(data)).catch(console.error);
+    // TODO: Replace with actual school ID from environment or context
+    const schoolId = 'default-school-id';
+    fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/schools/${schoolId}`)
+      .then(res => res.json())
+      .then(data => setSchool(data))
+      .catch(console.error);
 
     const bgTimer = setInterval(() => {
       setBgIndex((prev) => (prev + 1) % backgroundSlideshow.length);

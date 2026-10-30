@@ -21,8 +21,20 @@ function CertificateViewerContent() {
     const fetchReviewDetails = async () => {
       setLoading(true);
       try {
-        // Fetch student dashboard data via Bearilly API
-        const response = await fetch(`/api/v1/students/${userId}/dashboard`);
+        // Retrieve the short-lived session token from cookies (set by the school's server-side auth exchange)
+        const token = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('bearilly_session='))
+          ?.split('=')[1];
+
+        // Fetch student dashboard data via Bearilly API using the browser-safe URL and session token
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/students/${userId}/dashboard`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
         if (!response.ok) throw new Error('Failed to fetch student data');
         const data = await response.json();
 

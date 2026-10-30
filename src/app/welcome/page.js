@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 export default function WelcomeOnboarding() {
   const router = useRouter();
   const [onboardingData, setOnboardingData] = useState(null);
-  const [studentId, setStudentId] = useState(null); // TODO: Map from existing session identity
+  const [studentId, setStudentId] = useState(null); 
 
   const backgroundSlideshow = [
     'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1600&auto=format&fit=crop&q=80',
@@ -24,11 +24,13 @@ export default function WelcomeOnboarding() {
   }, []);
 
   useEffect(() => {
-    // Fetch onboarding state from Bearilly API
+    // TODO: Retrieve studentId from school's auth session
     const fetchOnboarding = async () => {
       if (!studentId) return;
       try {
-        const res = await fetch(`/api/v1/students/${studentId}/onboarding`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/students/${studentId}/onboarding`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('bearilly_token')}` }
+        });
         if (res.ok) {
           const data = await res.json();
           setOnboardingData(data);
@@ -44,9 +46,12 @@ export default function WelcomeOnboarding() {
     e.preventDefault();
     if (studentId) {
       try {
-        await fetch(`/api/v1/students/${studentId}/onboarding`, {
+        await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/students/${studentId}/onboarding`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('bearilly_token')}`
+          },
           body: JSON.stringify({ tour_completed: true })
         });
       } catch (error) {
@@ -82,7 +87,6 @@ export default function WelcomeOnboarding() {
         <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] z-20" />
       </div>
 
-      {/* Onboarding Box Panel */}
       <div className="relative z-30 w-full max-w-md border border-white/10 bg-black/50 backdrop-blur-xl p-8 shadow-2xl space-y-6 text-center">
         
         <div className="flex flex-col justify-center items-center relative select-none mx-auto">

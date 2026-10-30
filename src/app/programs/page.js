@@ -14,7 +14,9 @@ export default function Programs() {
   useEffect(() => {
     async function loadCourses() {
       try {
-        const response = await fetch('/api/v1/courses');
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/courses`, {
+          headers: { 'Accept': 'application/json' }
+        });
         if (response.ok) {
           const data = await response.json();
           setCourses(data);
@@ -28,7 +30,6 @@ export default function Programs() {
     loadCourses();
   }, []);
 
-  // Map Bearilly courses to the visual structure, providing design defaults for missing metadata
   const programsData = courses.length > 0 ? courses.map((course, index) => {
     const themes = [
       { accent: 'border-blue-500 text-blue-400', fill: 'bg-blue-500', img: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200&auto=format&fit=crop&q=80' },

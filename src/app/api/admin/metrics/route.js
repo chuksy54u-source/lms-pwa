@@ -7,8 +7,7 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Fetch school dashboard metrics from Bearilly API
-    const response = await fetch(`${process.env.BEARILLY_API_URL}/api/v1/schools/${schoolId}/dashboard`, {
+    const response = await fetch(`${process.env.BEARILLY_URL}/api/v1/schools/${schoolId}/dashboard`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${process.env.BEARILLY_API_KEY}`,
@@ -22,12 +21,10 @@ export async function GET(request) {
 
     const data = await response.json();
 
-    // Mapping Bearilly dashboard response to existing metrics structure
-    // Bearilly dashboard provides: active_learners, slots_used, avg_scores, students_needing_help
     return NextResponse.json({
       totalStudents: data.active_learners || 0,
-      totalInstructors: 0, // TODO: Map to staff endpoint if required by future schema
-      usersList: [], // TODO: Bearilly provides aggregated metrics; list operations require specific student/staff endpoints
+      totalInstructors: 0, // TODO: Map to /api/v1/teachers if required by future schema
+      usersList: [], // TODO: Requires pagination via /api/v1/students and /api/v1/teachers
       metrics: data
     }, { status: 200 });
 
