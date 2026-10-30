@@ -7,12 +7,10 @@ export default function About() {
   const [currentYear, setCurrentYear] = useState(2026);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Safeguard against Next.js SSR hydration mismatch for the year
   useEffect(() => {
     setCurrentYear(new Date().getFullYear());
   }, []);
 
-  // Intersection Observer to trigger slide animations dynamically on scroll (Up & Down)
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -25,7 +23,7 @@ export default function About() {
         });
       },
       {
-        threshold: 0.1, // Trigger when 10% of the element is visible
+        threshold: 0.1,
         rootMargin: '0px 0px -50px 0px'
       }
     );
@@ -36,12 +34,11 @@ export default function About() {
     return () => {
       cards.forEach((card) => observer.unobserve(card));
     };
-  }, [activeTab]); // Re-run whenever activeTab changes to bind to new tab elements
+  }, [activeTab]);
 
   return (
     <div className="min-h-screen bg-black text-white selection:bg-red-500/20 antialiased font-sans flex flex-col relative overflow-hidden">
       
-      {/* PPT Animation Engine Inject with Scroll triggers */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes slideUp {
           0% { opacity: 0; transform: translateY(20px); }
@@ -51,7 +48,6 @@ export default function About() {
           animation: slideUp 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        /* SCROLL-TRIGGERED SLIDE TRANSITION RULES */
         .scroll-card {
           opacity: 0;
           transform: translateX(-50px);
@@ -68,7 +64,6 @@ export default function About() {
         }
       `}} />
 
-      {/* Consistent Top Header Nav */}
       <header className="border-b border-white/10 bg-white/95 backdrop-blur-md sticky top-0 z-50 px-4 sm:px-6 md:px-12 py-4 flex justify-between items-center max-w-7xl mx-auto w-full text-black">
         <div className="flex items-center space-x-3 select-none">
           <div className="relative w-10 h-10 flex-shrink-0 flex items-center justify-center">
@@ -98,30 +93,18 @@ export default function About() {
         </div>
 
         <nav className="hidden md:flex items-center space-x-8 text-xs font-bold uppercase tracking-wider text-slate-600">
-          <Link href="/" className="hover:text-blue-600 transition-colors pb-1">
-            Home
-          </Link>
-          <Link href="/programs" className="hover:text-blue-600 transition-colors pb-1">
-            Programs
-          </Link>
-          <Link href="/about" className="hover:text-blue-600 transition-colors border-b-2 border-blue-600 pb-1 text-black">
-            About
-          </Link>
-          <Link href="/contact" className="hover:text-blue-600 transition-colors pb-1">
-            Contact
-          </Link>
+          <Link href="/" className="hover:text-blue-600 transition-colors pb-1">Home</Link>
+          <Link href="/programs" className="hover:text-blue-600 transition-colors pb-1">Programs</Link>
+          <Link href="/about" className="hover:text-blue-600 transition-colors border-b-2 border-blue-600 pb-1 text-black">About</Link>
+          <Link href="/contact" className="hover:text-blue-600 transition-colors pb-1">Contact</Link>
+          <Link href="/playground" className="hover:text-blue-600 transition-colors pb-1 text-red-600">Playground</Link>
         </nav>
 
         <div className="hidden sm:flex items-center space-x-6">
-          <Link href="/login" className="text-xs font-bold text-slate-600 hover:text-black transition-colors">
-            Sign In
-          </Link>
-          <Link href="/signup" className="rounded-none border-2 border-black bg-black px-6 py-2.5 text-xs font-bold text-white hover:bg-red-600 hover:border-red-600 transition-all duration-300">
-            Get Started
-          </Link>
+          <Link href="/login" className="text-xs font-bold text-slate-600 hover:text-black transition-colors">Sign In</Link>
+          <Link href="/signup" className="rounded-none border-2 border-black bg-black px-6 py-2.5 text-xs font-bold text-white hover:bg-red-600 hover:border-red-600 transition-all duration-300">Get Started</Link>
         </div>
 
-        {/* Mobile Menu Action Button */}
         <button 
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           className="md:hidden flex flex-col justify-center items-center w-8 h-8 space-y-1.5 focus:outline-none"
@@ -132,13 +115,13 @@ export default function About() {
           <span className={`block w-6 h-0.5 bg-black transition-transform duration-300 ${mobileMenuOpen ? 'transform -rotate-45 -translate-y-2' : ''}`}></span>
         </button>
 
-        {/* Floating Mobile Dropdown Context */}
         {mobileMenuOpen && (
           <div className="absolute top-full left-0 w-full bg-white border-b border-black/10 flex flex-col p-6 space-y-4 md:hidden shadow-xl animate-slide-up z-50">
             <Link href="/" onClick={() => setMobileMenuOpen(false)} className="text-sm font-bold uppercase tracking-wider text-slate-600 hover:text-blue-600">Home</Link>
             <Link href="/programs" onClick={() => setMobileMenuOpen(false)} className="text-sm font-bold uppercase tracking-wider text-slate-600 hover:text-blue-600">Programs</Link>
             <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="text-sm font-bold uppercase tracking-wider text-black border-l-2 border-blue-600 pl-2">About</Link>
             <Link href="/contact" onClick={() => setMobileMenuOpen(false)} className="text-sm font-bold uppercase tracking-wider text-slate-600 hover:text-blue-600">Contact</Link>
+            <Link href="/playground" onClick={() => setMobileMenuOpen(false)} className="text-sm font-bold uppercase tracking-wider text-red-600">Playground</Link>
             <hr className="border-slate-200 sm:hidden" />
             <div className="flex flex-col space-y-3 sm:hidden pt-2">
               <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="text-sm font-bold text-slate-600 text-center py-2">Sign In</Link>
@@ -148,10 +131,8 @@ export default function About() {
         )}
       </header>
 
-      {/* Main Container */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-12 py-10 md:py-20 flex flex-col space-y-16 md:space-y-20">
         
-        {/* Section 1: Hero Pitch Deck */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center animate-slide-up">
           <div className="lg:col-span-7 space-y-4 md:space-y-6 text-left">
             <span className="text-xs font-bold text-red-500 tracking-widest uppercase">The School Narrative</span>
@@ -190,7 +171,6 @@ export default function About() {
 
         <hr className="border-white/10" id="vision" />
 
-        {/* Section 2: Vision & Mission Matrix */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
           <div 
             className="scroll-card border border-white/10 bg-white/[0.01] p-6 sm:p-8 space-y-6 text-left relative overflow-hidden group hover:border-blue-500/40 hover:-translate-y-1 hover:shadow-[0_4px_30px_rgba(59,130,246,0.1)] transition-all duration-500 flex flex-col justify-between"
@@ -235,7 +215,6 @@ export default function About() {
           </div>
         </div>
 
-        {/* Section 3: Interactive Problem vs. Priority Ecosystem */}
         <section className="space-y-6 md:space-y-8 text-left">
           <div className="max-w-2xl animate-slide-up">
             <span className="text-xs font-bold text-amber-400 tracking-widest uppercase">Educational Reformation</span>
@@ -245,7 +224,6 @@ export default function About() {
             </p>
           </div>
 
-          {/* Interactive Navigation Elements */}
           <div className="flex border-b border-white/10 animate-slide-up overflow-x-auto no-scrollbar whitespace-nowrap">
             <button 
               onClick={() => setActiveTab('pillars')}
@@ -318,7 +296,6 @@ export default function About() {
           )}
         </section>
 
-        {/* Section 4: Learning Model Timeline */}
         <section className="space-y-6 md:space-y-8 text-left">
           <div className="max-w-2xl animate-slide-up">
             <span className="text-xs font-bold text-blue-400 tracking-widest uppercase font-mono">The OTDS Method</span>
@@ -357,7 +334,6 @@ export default function About() {
           </div>
         </section>
 
-        {/* Section 5: Ornate Core Hubs */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 items-stretch">
           
           <div 
@@ -422,7 +398,6 @@ export default function About() {
 
         </div>
 
-        {/* Section 6: Five-Year Goals and Milestones */}
         <section className="pt-12 sm:pt-16 border-t border-white/10 space-y-10 md:space-y-12 text-left">
           <div className="max-w-2xl animate-slide-up">
             <span className="text-xs font-bold text-amber-500 tracking-widest uppercase">Strategic Vision</span>
@@ -464,7 +439,6 @@ export default function About() {
 
       </main>
 
-      {/* Consistent Footer */}
       <footer className="border-t border-white/10 bg-black/80 backdrop-blur-md text-slate-400 text-xs py-12 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-8 text-left">
           <div className="space-y-3 sm:col-span-2 md:col-span-1">

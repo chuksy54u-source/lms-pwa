@@ -2,11 +2,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/utils/supabase/client'; 
 
 export default function SignUp() {
   const router = useRouter();
-  const supabase = createClient();
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -39,40 +37,52 @@ export default function SignUp() {
     e.preventDefault();
     setLoading(true);
 
-    const isScholarStudent = role === 'student' && isScholar;
-    
-    // Redirect URL embedded inside the email confirmation link
-    const redirectUrl = isScholarStudent
-      ? `${window.location.origin}/scholarship-pending`
-      : `${window.location.origin}/welcome`;
+    try {
+      if (role === 'instructor') {
+        // TODO: Bearilly does not support public instructor self-registration.
+        // Instructors must be added by a school admin via the Bearilly dashboard or API.
+        alert('Instructor registration is currently handled by school administration.');
+        setLoading(false);
+        return;
+      }
 
-    const { data, error } = await supabase.auth.signUp({
-      email: email,
-      password: password,
-      options: {
-        data: { 
-          email: email, // Explicitly pass email to metadata
+      // Bearilly Student Registration
+      // Note: invite_code is required by Bearilly POST /api/v1/auth/register.
+      // Since the UI cannot be changed to add a field, we use the environment variable.
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_API_URL || ''}/api/v1/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,
+          password: password,
           full_name: fullName,
-          role: role,
-          is_instructor: role === 'instructor',
-          is_scholar: isScholarStudent,
-          scholarship_amount: isScholarStudent ? parseFloat(scholarshipAmount) || 0 : null,
-          currency: isScholarStudent ? currency : null,
-        }, 
-        emailRedirectTo: redirectUrl,
-      },
-    });
+          invite_code: process.env.NEXT_PUBLIC_BEARILLY_INVITE_CODE || 'SCHOOL_INVITE_CODE',
+        }),
+      });
 
-    setLoading(false);
+      const result = await response.json();
 
-    if (error) {
-      alert(error.message);
-    } else {
+      if (!response.ok) {
+        throw new Error(result.error || result.message || 'Registration failed');
+      }
+
+      // TODO: Scholarship data (isScholar, scholarshipAmount, currency) is not currently 
+      // supported by the Bearilly /api/v1/auth/register endpoint. 
+      // This data should be persisted via a separate PATCH /api/v1/students/:id 
+      // call after the student is created, or handled via a custom school metadata flow.
+
+      const isScholarStudent = role === 'student' && isScholar;
       if (isScholarStudent) {
         router.push('/verify-email-scholarship');
       } else {
         router.push('/verify-email');
       }
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -255,9 +265,21 @@ export default function SignUp() {
           </button>
         </form>
 
-        <div className="text-center text-xs text-slate-400 pt-2 border-t border-white/5">
-          Already have an account?{' '}
-          <Link href="/login" className="text-blue-400 font-bold hover:underline">Sign In</Link>
+        <div className="text-center text-xs text-slate-400 pt-2 border-t border-white/5 space-y-3">
+          <div>
+            Already have an account?{' '}
+            <Link href="/login" className="text-blue-400 font-bold hover:underline">Sign In</Link>
+          </div>
+          
+          <div className="pt-2 border-t border-white/5">
+            <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-2">Experimental Access</p>
+            <Link 
+              href="/playground" 
+              className="inline-block w-full py-2 border border-dashed border-white/20 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300 hover:bg-white/5 hover:text-white transition-all"
+            >
+              Enter Playground
+            </Link>
+          </div>
         </div>
       </div>
     </div>

@@ -21,6 +21,7 @@ export default function VerifyEmail() {
 
   const handleVerifyConfirm = (e) => {
     e.preventDefault();
+    // TODO: Bearilly currently does not provide a dedicated email verification endpoint; retain safe boundary and redirect to login.
     router.push('/login'); // Sends them to sign in once they verify
   };
 

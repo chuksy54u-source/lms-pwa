@@ -1,8 +1,13 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function WelcomeOnboarding() {
+  const router = useRouter();
+  const [onboardingData, setOnboardingData] = useState(null);
+  const [studentId, setStudentId] = useState(null); // TODO: Map from existing session identity
+
   const backgroundSlideshow = [
     'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1600&auto=format&fit=crop&q=80',
     'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=1600&auto=format&fit=crop&q=80',
@@ -17,6 +22,39 @@ export default function WelcomeOnboarding() {
     }, 6000);
     return () => clearInterval(bgTimer);
   }, []);
+
+  useEffect(() => {
+    // Fetch onboarding state from Bearilly API
+    const fetchOnboarding = async () => {
+      if (!studentId) return;
+      try {
+        const res = await fetch(`/api/v1/students/${studentId}/onboarding`);
+        if (res.ok) {
+          const data = await res.json();
+          setOnboardingData(data);
+        }
+      } catch (error) {
+        console.error('Error fetching onboarding state:', error);
+      }
+    };
+    fetchOnboarding();
+  }, [studentId]);
+
+  const handleWorkspaceClick = async (e) => {
+    e.preventDefault();
+    if (studentId) {
+      try {
+        await fetch(`/api/v1/students/${studentId}/onboarding`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tour_completed: true })
+        });
+      } catch (error) {
+        console.error('Error updating onboarding state:', error);
+      }
+    }
+    router.push('/dashboard');
+  };
 
   return (
     <div className="min-h-screen relative overflow-hidden text-white selection:bg-red-500/20 antialiased font-sans flex items-center justify-center p-4">
@@ -70,9 +108,13 @@ export default function WelcomeOnboarding() {
           </p>
         </div>
 
-        <div className="pt-2">
-          <Link href="/dashboard" className="block w-full text-center rounded-none bg-red-600 py-3.5 text-xs font-bold uppercase tracking-widest text-white hover:bg-white hover:text-black transition-all duration-300 shadow-lg shadow-red-600/10">
+        <div className="pt-2 space-y-4">
+          <Link href="/dashboard" onClick={handleWorkspaceClick} className="block w-full text-center rounded-none bg-red-600 py-3.5 text-xs font-bold uppercase tracking-widest text-white hover:bg-white hover:text-black transition-all duration-300 shadow-lg shadow-red-600/10">
             Go to Workspace
+          </Link>
+          
+          <Link href="/dashboard/playground" className="block w-full text-center rounded-none border border-white/10 bg-white/5 py-3.5 text-xs font-bold uppercase tracking-widest text-white hover:bg-white hover:text-black transition-all duration-300">
+            AI Playground
           </Link>
         </div>
       </div>
