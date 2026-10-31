@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 
 export default function WelcomeOnboarding() {
   const router = useRouter();
-  const [onboardingData, setOnboardingData] = useState(null);
-  const [studentId, setStudentId] = useState(null); 
+  const [user, setUser] = useState(null);
 
   const backgroundSlideshow = [
     'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1600&auto=format&fit=crop&q=80',
@@ -24,39 +23,36 @@ export default function WelcomeOnboarding() {
   }, []);
 
   useEffect(() => {
-    // TODO: Retrieve studentId from school's auth session
-    const fetchOnboarding = async () => {
-      if (!studentId) return;
+    const fetchUser = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/students/${studentId}/onboarding`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('bearilly_token')}` }
+        const res = await fetch('/api/v1/auth/me', {
+          credentials: 'same-origin'
         });
         if (res.ok) {
           const data = await res.json();
-          setOnboardingData(data);
+          setUser(data);
         }
       } catch (error) {
-        console.error('Error fetching onboarding state:', error);
+        console.error('Error fetching user session:', error);
       }
     };
-    fetchOnboarding();
-  }, [studentId]);
+    fetchUser();
+  }, []);
 
   const handleWorkspaceClick = async (e) => {
     e.preventDefault();
-    if (studentId) {
-      try {
-        await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/students/${studentId}/onboarding`, {
-          method: 'PATCH',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('bearilly_token')}`
-          },
-          body: JSON.stringify({ tour_completed: true })
-        });
-      } catch (error) {
-        console.error('Error updating onboarding state:', error);
-      }
+    try {
+      // Track onboarding completion as a progress event
+      await fetch('/api/v1/progress/events', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ kind: 'onboarding_completed' }),
+        credentials: 'same-origin'
+      });
+    } catch (error) {
+      console.error('Error updating onboarding state:', error);
     }
     router.push('/dashboard');
   };

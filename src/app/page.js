@@ -21,13 +21,9 @@ export default function Home() {
   const [school, setSchool] = useState(null);
 
   useEffect(() => {
-    // TODO: Replace with actual school ID from environment or context
-    const schoolId = 'default-school-id';
-    fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/schools/${schoolId}`)
-      .then(res => res.json())
-      .then(data => setSchool(data))
-      .catch(console.error);
-
+    // TODO: Fetch school metadata via server-side proxy to /api/v1/schools/:id
+    // School identity is managed by the school's existing auth provider.
+    
     const bgTimer = setInterval(() => {
       setBgIndex((prev) => (prev + 1) % backgroundSlideshow.length);
     }, 6000);

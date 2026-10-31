@@ -48,17 +48,18 @@ function AdminDashboardContent() {
   const verifyAdminPrivileges = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/v1/auth/me');
-      const user = await res.json();
+      const res = await fetch('/api/v1/schools');
+      const schools = await res.json();
       
-      if (!res.ok || !user || !user.roles?.includes('school_admin')) {
+      if (!res.ok || !schools || schools.length === 0) {
         setIsAuthorized(false);
         return;
       }
 
+      const currentSchool = schools[0];
       setIsAuthorized(true);
-      setSchoolId(user.school?.id);
-      await fetchAdminData(user.school?.id);
+      setSchoolId(currentSchool.id);
+      await fetchAdminData(currentSchool.id);
     } catch (err) {
       console.error("Authorization engine breakdown:", err.message);
     } finally {
@@ -77,12 +78,12 @@ function AdminDashboardContent() {
         applicationsRes,
         apiKeysRes
       ] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/schools/${id}/dashboard`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('brl_token')}` } }),
-        fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/students`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('brl_token')}` } }),
-        fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/courses`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('brl_token')}` } }),
-        fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/enrolments`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('brl_token')}` } }),
-        fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/schools/${id}/admissions/applications`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('brl_token')}` } }),
-        fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/schools/${id}/api-keys`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('brl_token')}` } })
+        fetch(`/api/v1/schools/${id}/dashboard`),
+        fetch(`/api/v1/students`),
+        fetch(`/api/v1/courses`),
+        fetch(`/api/v1/enrolments`),
+        fetch(`/api/v1/schools/${id}/admissions/applications`),
+        fetch(`/api/v1/schools/${id}/api-keys`)
       ]);
 
       const dashboard = await dashboardRes.json();
@@ -124,12 +125,9 @@ function AdminDashboardContent() {
     try {
       setUploadProgress({ stage: 'Synchronizing Database Record...', percent: 50 });
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/courses`, {
+      const res = await fetch(`/api/v1/courses`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('brl_token')}`
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: formData.title,
           description: formData.description,
@@ -163,9 +161,8 @@ function AdminDashboardContent() {
       if (action === 'approved') {
         alert(`Enrollment request successfully flagged as ${action}.`);
       } else {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/enrolments/${enrollmentId}`, {
-          method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('brl_token')}` }
+        const res = await fetch(`/api/v1/enrolments/${enrollmentId}`, {
+          method: 'DELETE'
         });
         if (!res.ok) throw new Error('Failed to reject enrolment');
         alert(`Enrollment request successfully flagged as ${action}.`);
@@ -183,18 +180,14 @@ function AdminDashboardContent() {
   const handleVerifyScholar = async (applicationId, email, fullName, action) => {
     try {
       if (action === 'verified') {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/schools/${schoolId}/admissions/applications/${applicationId}/admit`, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('brl_token')}` }
+        const res = await fetch(`/api/v1/schools/${schoolId}/admissions/applications/${applicationId}/admit`, {
+          method: 'POST'
         });
         if (!res.ok) throw new Error('Failed to admit applicant');
       } else {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/schools/${schoolId}/admissions/applications/${applicationId}`, {
+        const res = await fetch(`/api/v1/schools/${schoolId}/admissions/applications/${applicationId}`, {
           method: 'PATCH',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('brl_token')}`
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: 'rejected' })
         });
         if (!res.ok) throw new Error('Failed to update application status');

@@ -18,6 +18,30 @@ export default function ScholarshipVerifyEmail() {
     return () => clearInterval(bgTimer);
   }, []);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    const slug = params.get('slug');
+
+    if (token && slug) {
+      fetch(`/api/v1/admissions/${encodeURIComponent(slug)}/status?token=${encodeURIComponent(token)}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'same-origin',
+      })
+        .then((res) => res.json())
+        .then(() => {
+          // Application tracking status verified via Bearilly proxy
+        })
+        .catch((err) => {
+          console.error('Error fetching application status:', err);
+        });
+    }
+  }, []);
+
   return (
     <div className="min-h-screen relative overflow-hidden text-white selection:bg-red-500/20 antialiased font-sans flex items-center justify-center p-4">
       

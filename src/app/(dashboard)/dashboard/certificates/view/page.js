@@ -6,58 +6,45 @@ function CertificateViewerContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const courseId = searchParams.get('verified_id');
-  const userId = searchParams.get('user');
+  const code = searchParams.get('code');
 
   const [loading, setLoading] = useState(true);
   const [panelData, setPanelData] = useState(null);
 
   useEffect(() => {
-    if (!courseId || !userId) {
+    if (!code) {
       setLoading(false);
       return;
     }
 
-    const fetchReviewDetails = async () => {
+    const fetchCertificateDetails = async () => {
       setLoading(true);
       try {
-        // Retrieve the short-lived session token from cookies (set by the school's server-side auth exchange)
-        const token = document.cookie
-          .split('; ')
-          .find(row => row.startsWith('bearilly_session='))
-          ?.split('=')[1];
-
-        // Fetch student dashboard data via Bearilly API using the browser-safe URL and session token
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/students/${userId}/dashboard`, {
+        const response = await fetch(`/api/v1/certificates/verify/${code}`, {
+          method: 'GET',
           headers: {
-            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
 
-        if (!response.ok) throw new Error('Failed to fetch student data');
+        if (!response.ok) throw new Error('Failed to fetch certificate data');
         const data = await response.json();
 
-        // Locate specific course/certificate in the student's dashboard
-        const cert = data.certificates?.find(c => c.course_id === courseId);
-        const course = data.courses?.find(c => c.id === courseId);
-        const result = data.results?.find(r => r.course_id === courseId);
-
-        if (course) {
+        if (data) {
           setPanelData({
-            courseTitle: course.title,
-            courseCategory: course.category || 'General',
-            courseDescription: course.description || 'No course curriculum node description logged.',
-            studentName: data.full_name || 'Distinguished Student',
-            assignmentFile: result?.document_url || '#',
-            assignmentScore: result?.score || result?.grade || '100%',
-            submittedAt: result?.created_at ? new Date(result.created_at).toLocaleDateString('en-US', {
+            courseTitle: data.course_title || 'Verified Course',
+            courseCategory: data.category || 'General',
+            courseDescription: data.description || 'No course curriculum node description logged.',
+            studentName: data.student_name || 'Distinguished Student',
+            assignmentFile: data.document_url || '#',
+            assignmentScore: data.score || '100%',
+            submittedAt: data.created_at ? new Date(data.created_at).toLocaleDateString('en-US', {
               year: 'numeric', month: 'short', day: 'numeric'
             }) : 'Verified Node',
-            issuedAt: cert?.issued_at ? new Date(cert.issued_at).toLocaleDateString('en-US', {
+            issuedAt: data.issued_at ? new Date(data.issued_at).toLocaleDateString('en-US', {
               year: 'numeric', month: 'long', day: 'numeric'
             }) : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-            cardVisual: cert?.certificateimage_url || 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?q=80&w=600&auto=format&fit=crop'
+            cardVisual: data.certificateimage_url || 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?q=80&w=600&auto=format&fit=crop'
           });
         }
       } catch (err) {
@@ -67,8 +54,8 @@ function CertificateViewerContent() {
       }
     };
 
-    fetchReviewDetails();
-  }, [courseId, userId]);
+    fetchCertificateDetails();
+  }, [code]);
 
   if (loading) {
     return (
@@ -113,7 +100,7 @@ function CertificateViewerContent() {
 
           <div className="relative z-10 flex justify-between items-start">
             <span className="text-[8px] font-bold uppercase text-white bg-black/60 border border-white/10 px-1.5 py-0.5 rounded-sm">
-              Node: {courseId}
+              Code: {code}
             </span>
             <span className="text-[9px] text-amber-400 font-bold uppercase bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-sm">
               Certified

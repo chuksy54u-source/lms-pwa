@@ -12,22 +12,10 @@ export default function CertificatesPage() {
     const fetchCertificates = async () => {
       setLoading(true);
       try {
-        const bearillyUrl = process.env.NEXT_PUBLIC_BEARILLY_URL || '';
-        const token = typeof window !== 'undefined' ? (localStorage.getItem('bearilly_session_token') || localStorage.getItem('session_token')) : null;
-        const studentId = typeof window !== 'undefined' ? (localStorage.getItem('bearilly_student_id') || localStorage.getItem('student_id')) : null;
-
-        if (!studentId) {
-          setLoading(false);
-          return;
-        }
-
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const certsRes = await fetch(`${bearillyUrl}/api/v1/students/${studentId}/certificates`, { headers });
-        if (!certsRes.ok) throw new Error('Failed to fetch certificates');
-
-        const certsData = await certsRes.json();
-        const list = Array.isArray(certsData) ? certsData : (certsData.certificates || []);
-        setEarnedCertificates(list);
+        // TODO: There is currently no verified Bearilly endpoint to list earned student certificates.
+        // Public verification is available via GET /api/v1/certificates/verify/:code.
+        // Retaining safe stub until student certificate listing endpoint is supported by Bearilly API.
+        setEarnedCertificates([]);
       } catch (err) {
         console.error("Error loading certificates registry:", err.message);
       } finally {
@@ -45,8 +33,9 @@ export default function CertificatesPage() {
     setVerifying(true);
     setVerifyResult(null);
     try {
-      const bearillyUrl = process.env.NEXT_PUBLIC_BEARILLY_URL || '';
-      const res = await fetch(`${bearillyUrl}/api/v1/certificates/verify/${encodeURIComponent(trimmed)}`);
+      const res = await fetch(`/api/v1/certificates/verify/${encodeURIComponent(trimmed)}`, {
+        credentials: 'same-origin',
+      });
       if (res.ok) {
         const data = await res.json();
         setVerifyResult({ valid: true, ...data });

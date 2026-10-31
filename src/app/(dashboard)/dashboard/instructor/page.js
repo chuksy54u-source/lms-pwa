@@ -17,13 +17,10 @@ export default function InstructorDashboard() {
   
   const [moduleTitle, setModuleTitle] = useState('');
   const [moduleOrder, setModuleOrder] = useState('1');
-  const [moduleFile, setModuleFile] = useState(null);
 
   const [lessonTitle, setLessonTitle] = useState('');
   const [lessonOrder, setLessonOrder] = useState('1');
   const [lessonDescription, setLessonDescription] = useState('');
-  const [lessonExample, setLessonExample] = useState('');
-  const [lessonFile, setLessonFile] = useState(null);
   
   const [quizQuestion, setQuizQuestion] = useState('');
   const [optA, setOptA] = useState('');
@@ -35,9 +32,6 @@ export default function InstructorDashboard() {
   const [assignmentTitle, setAssignmentTitle] = useState('');
   const [submissionRequirements, setSubmissionRequirements] = useState('');
   const [evaluationCriteria, setEvaluationCriteria] = useState('');
-  const [assignmentFile, setAssignmentFile] = useState(null); 
-
-  const [gradesInput, setGradesInput] = useState({});
 
   const [pgStudentId, setPgStudentId] = useState('');
   const [pgResult, setPgResult] = useState(null);
@@ -56,7 +50,6 @@ export default function InstructorDashboard() {
     setLoading(true);
     try {
       const res = await fetch('/api/v1/teachers');
-      const data = await res.json();
       if (!res.ok) throw new Error();
       setIsAuthorized(true);
       await fetchCourses();
@@ -69,9 +62,7 @@ export default function InstructorDashboard() {
 
   const fetchCourses = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/courses`, {
-        headers: { 'Authorization': `Bearer ${sessionStorage.getItem('bearilly_token')}` }
-      });
+      const res = await fetch('/api/v1/courses');
       const data = await res.json();
       if (res.ok) {
         setCourses(data || []);
@@ -84,9 +75,7 @@ export default function InstructorDashboard() {
 
   const fetchCourseData = async (courseId) => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/courses/${courseId}/results`, {
-        headers: { 'Authorization': `Bearer ${sessionStorage.getItem('bearilly_token')}` }
-      });
+      const res = await fetch(`/api/v1/courses/${courseId}/results`);
       const data = await res.json();
       if (res.ok) {
         const mapped = (data || []).map(r => ({
@@ -107,24 +96,16 @@ export default function InstructorDashboard() {
   };
 
   const handleCommitGrade = async (uploadId) => {
-    // TODO: Map to Bearilly submission grading endpoint when available in API map
     alert("Manual grade override is currently handled via Bearilly Assessment Submissions. TODO: Implement POST /api/v1/submissions/:id/grade");
-  };
-
-  const handleVerifyStudent = async (uploadId) => {
-    alert("Verification status is automatically derived from Bearilly Assessment results.");
   };
 
   const handleDeployModule = async (e) => {
     e.preventDefault();
     if (!moduleTitle || !selectedCourse) return;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/courses/${selectedCourse}/units`, {
+      const res = await fetch(`/api/v1/courses/${selectedCourse}/units`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionStorage.getItem('bearilly_token')}`
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: moduleTitle })
       });
       if (!res.ok) throw new Error(await res.text());
@@ -138,7 +119,6 @@ export default function InstructorDashboard() {
 
   const handleDeployLesson = async (e) => {
     e.preventDefault();
-    // TODO: Bearilly API map does not currently expose a direct 'create lesson' endpoint outside of Unit creation.
     alert("Lesson deployment is currently managed via the Bearilly Course Builder. TODO: Implement POST /api/v1/courses/:id/units/:uid/lessons");
   };
 
@@ -146,12 +126,9 @@ export default function InstructorDashboard() {
     e.preventDefault();
     if (!quizQuestion || !optA || !optB || !optC || !optD || !correctAnswer) return;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/courses/${selectedCourse}/assessments`, {
+      const res = await fetch(`/api/v1/courses/${selectedCourse}/assessments`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionStorage.getItem('bearilly_token')}`
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: "Quick Quiz",
           pass_mark: 60,
@@ -176,12 +153,9 @@ export default function InstructorDashboard() {
     e.preventDefault();
     if (!assignmentTitle || !selectedCourse) return;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/courses/${selectedCourse}/assessments`, {
+      const res = await fetch(`/api/v1/courses/${selectedCourse}/assessments`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionStorage.getItem('bearilly_token')}`
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: assignmentTitle,
           pass_mark: 50,
@@ -203,9 +177,7 @@ export default function InstructorDashboard() {
   const handleFetchMood = async () => {
     if (!pgStudentId) return;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/teachers/${pgStudentId}/dashboard`, {
-        headers: { 'Authorization': `Bearer ${sessionStorage.getItem('bearilly_token')}` }
-      });
+      const res = await fetch(`/api/v1/students/${pgStudentId}/tutor-state`);
       const data = await res.json();
       setPgResult(data);
     } catch (err) {
@@ -216,9 +188,7 @@ export default function InstructorDashboard() {
   const handleFetchProgress = async () => {
     if (!pgStudentId) return;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/courses/${pgStudentId}/results`, {
-        headers: { 'Authorization': `Bearer ${sessionStorage.getItem('bearilly_token')}` }
-      });
+      const res = await fetch(`/api/v1/students/${pgStudentId}/progress`);
       const data = await res.json();
       setPgResult(data);
     } catch (err) {

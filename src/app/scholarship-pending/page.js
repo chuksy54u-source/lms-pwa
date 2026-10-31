@@ -26,8 +26,9 @@ function ScholarshipPendingContent() {
 
   useEffect(() => {
     if (token) {
-      const baseUrl = process.env.NEXT_PUBLIC_BEARILLY_URL ? process.env.NEXT_PUBLIC_BEARILLY_URL.replace(/\/$/, '') : '';
-      fetch(`${baseUrl}/api/v1/admissions/scholarship/status?token=${encodeURIComponent(token)}`)
+      fetch(`/api/v1/admissions/scholarship/status?token=${encodeURIComponent(token)}`, {
+        credentials: 'same-origin',
+      })
         .then((res) => {
           if (!res.ok) {
             throw new Error('Failed to fetch status');

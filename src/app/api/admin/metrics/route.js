@@ -2,15 +2,19 @@ import { NextResponse } from 'next/server';
 
 export async function GET(request) {
   try {
+    // The school's own auth system verifies the session.
+    // The proxy ensures the request is authenticated before reaching this route.
     const schoolId = request.headers.get('x-school-id');
-    if (!schoolId) {
+    const ssoKey = process.env.BEARILLY_API_KEY;
+
+    if (!schoolId || !ssoKey) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const response = await fetch(`${process.env.BEARILLY_URL}/api/v1/schools/${schoolId}/dashboard`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${process.env.BEARILLY_API_KEY}`,
+        'Authorization': `Bearer ${ssoKey}`,
         'Content-Type': 'application/json',
       },
     });

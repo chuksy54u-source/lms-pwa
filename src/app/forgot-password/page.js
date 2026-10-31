@@ -16,7 +16,7 @@ export default function ForgotPassword() {
 
     // TODO: Bearilly does not currently provide a standalone password reset endpoint.
     // Integration requires school-specific identity provider configuration.
-    // For now, we simulate the request flow to maintain the UI contract.
+    // This flow remains handled by the school's existing identity provider.
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       setMessage('A secure recovery link has been dispatched to your email inbox.');

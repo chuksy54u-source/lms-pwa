@@ -23,10 +23,8 @@ export default function LessonViewPage({ params: paramsPromise }) {
     const fetchLessonData = async () => {
       setLoading(true);
       try {
-        const bearillyUrl = process.env.NEXT_PUBLIC_BEARILLY_URL;
-        
-        const lessonRes = await fetch(`${bearillyUrl}/api/v1/lessons/${lessonId}`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('bearilly_session')}` }
+        const lessonRes = await fetch(`/api/v1/lessons/${lessonId}`, {
+          credentials: 'same-origin'
         });
         
         if (!lessonRes.ok) {
@@ -37,19 +35,19 @@ export default function LessonViewPage({ params: paramsPromise }) {
         const lessonData = await lessonRes.json();
         setCurrentLesson(lessonData);
 
-        const tutorRes = await fetch(`${bearillyUrl}/api/v1/tutor/messages`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('bearilly_session')}` }
+        const tutorRes = await fetch(`/api/v1/tutor/messages`, {
+          credentials: 'same-origin'
         });
         if (tutorRes.ok) {
           const history = await tutorRes.json();
           setMessages(history.slice(-5)); 
         }
         
-        await fetch(`${bearillyUrl}/api/v1/progress/events`, {
+        await fetch(`/api/v1/progress/events`, {
           method: 'POST',
+          credentials: 'same-origin',
           headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('bearilly_session')}`
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             kind: 'lesson_opened',
@@ -70,11 +68,11 @@ export default function LessonViewPage({ params: paramsPromise }) {
     if (!currentLesson) return;
     setIsCompleting(true);
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/progress/events`, {
+      await fetch('/api/v1/progress/events', {
         method: 'POST',
+        credentials: 'same-origin',
         headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('bearilly_session')}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           kind: 'lesson_completed',
@@ -100,11 +98,11 @@ export default function LessonViewPage({ params: paramsPromise }) {
     setMessages(prev => [...prev, userMsg]);
     
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/tutor/ask`, {
+      const res = await fetch('/api/v1/tutor/ask', {
         method: 'POST',
+        credentials: 'same-origin',
         headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('bearilly_session')}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           context: { lessonId: currentLesson.id },

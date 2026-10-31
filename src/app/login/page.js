@@ -33,11 +33,10 @@ export default function Login() {
 
     try {
       // TODO: Use school's existing Auth provider (e.g. Supabase) to verify credentials.
-      // After successful verification, call the server-side exchange endpoint:
-      // POST /api/v1/students/:id/session
-      // Then store the returned short-lived token for Bearilly API calls.
+      // After successful verification, call the server-side proxy which performs:
+      // POST /api/v1/integration/session with the verified member email.
       
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('/api/v1/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim(), password }),
@@ -49,7 +48,6 @@ export default function Login() {
 
       const userData = await response.json();
 
-      // Redirect based on roles
       if (userData.roles.includes('teacher') || userData.roles.includes('school_admin')) {
         router.push('/dashboard/instructor');
       } else {

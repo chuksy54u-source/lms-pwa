@@ -14,7 +14,7 @@ export default function Programs() {
   useEffect(() => {
     async function loadCourses() {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/courses`, {
+        const response = await fetch('/api/v1/courses', {
           headers: { 'Accept': 'application/json' }
         });
         if (response.ok) {

@@ -21,22 +21,13 @@ export default function DashboardHome() {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
 
-        // Exchange for Bearilly token
-        const tokenRes = await fetch(`/api/v1/students/${session.user.id}/session`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
+        // Use relative proxy path as per BROWSER TRANSPORT CONTRACT
+        const dashboardRes = await fetch(`/api/v1/students/${session.user.id}/dashboard`, {
+          headers: { 'Accept': 'application/json' }
         });
-        const { token } = await tokenRes.json();
 
-        const headers = { 'Authorization': `Bearer ${token}` };
-
-        const [dashboardRes, coursesRes] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/students/${session.user.id}/dashboard`, { headers }),
-          fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL}/api/v1/courses`, { headers })
-        ]);
-
+        if (!dashboardRes.ok) throw new Error('Failed to fetch dashboard');
         const dashboard = await dashboardRes.json();
-        const allCourses = await coursesRes.json();
 
         const activeCourses = dashboard.courses || [];
         const progressData = dashboard.progress || {};

@@ -38,6 +38,7 @@ export default function Contact() {
       // Route submission to the Bearilly consultation endpoint
       const response = await fetch('/api/v1/contact/consultation', {
         method: 'POST',
+        credentials: 'same-origin',
         headers: {
           'Content-Type': 'application/json',
         },

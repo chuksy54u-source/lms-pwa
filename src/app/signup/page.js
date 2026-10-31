@@ -14,6 +14,7 @@ export default function SignUp() {
   const [isScholar, setIsScholar] = useState(false);
   const [scholarshipAmount, setScholarshipAmount] = useState('');
   const [currency, setCurrency] = useState('USD');
+  const [inviteCode, setInviteCode] = useState('');
   
   const [loading, setLoading] = useState(false);
 
@@ -43,9 +44,19 @@ export default function SignUp() {
         return;
       }
 
-      // School-managed auth (e.g., Supabase) happens here first.
-      // Assuming school-side auth logic is handled by the existing system.
-      
+      const response = await fetch('/api/v1/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          full_name: fullName,
+          invite_code: inviteCode
+        }),
+      });
+
+      if (!response.ok) throw new Error('Registration failed');
+
       // TODO: Scholarship data (isScholar, scholarshipAmount, currency) is not currently 
       // supported by the Bearilly core registration flow. 
       // This data should be persisted via a separate PATCH /api/v1/students/:id 
@@ -172,6 +183,18 @@ export default function SignUp() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
+              className="w-full rounded-none border border-white/10 bg-white/5 px-4 py-3 text-xs text-white placeholder-slate-500 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 transition-all"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Invite Code</label>
+            <input 
+              required
+              type="text" 
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value)}
+              placeholder="PASTE-THE-SCHOOLS-INVITE-CODE"
               className="w-full rounded-none border border-white/10 bg-white/5 px-4 py-3 text-xs text-white placeholder-slate-500 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 transition-all"
             />
           </div>
