@@ -1,52 +1,38 @@
-import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(request) {
   try {
-    // 1. Initialize Supabase Admin Client using the service role key
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
+    // The school's own auth system verifies the session.
+    // The proxy ensures the request is authenticated before reaching this route.
+    const schoolId = request.headers.get('x-school-id');
+    const ssoKey = process.env.BEARILLY_API_KEY;
 
-    // 2. Query the profiles database directory
-    const { data: profiles, error: profilesError } = await supabaseAdmin
-      .from('profiles')
-      .select('id, full_name, is_instructor, is_admin, role, email');
-
-    if (profilesError) throw profilesError;
-
-    // 3. Safely fetch auth users (wrapped so it doesn't break the whole page if it fails)
-    let authMap = new Map();
-    try {
-      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.listUsers({
-        perPage: 1000 // Increase the limit to capture everyone
-      });
-      if (!authError && authData?.users) {
-        authMap = new Map(authData.users.map(user => [user.id, user.email]));
-      }
-    } catch (e) {
-      console.warn("Auth list lookup bypassed:", e.message);
+    if (!schoolId || !ssoKey) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 4. Merge records securely
-    const safeUsers = (profiles || []).map(profile => ({
-      ...profile,
-      email: profile.email || authMap.get(profile.id) || 'No Email Verified'
-    }));
+    const response = await fetch(`${process.env.BEARILLY_URL}/api/v1/schools/${schoolId}/dashboard`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${ssoKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
 
-    // 5. Compute global telemetry metrics tracking indicators
-    const totalStudents = safeUsers.filter(u => !u.is_instructor && !u.is_admin).length;
-    const totalInstructors = safeUsers.filter(u => u.is_instructor).length;
+    if (!response.ok) {
+      throw new Error('Failed to fetch metrics from Bearilly');
+    }
+
+    const data = await response.json();
 
     return NextResponse.json({
-      totalStudents,
-      totalInstructors,
-      usersList: safeUsers
+      totalStudents: data.active_learners || 0,
+      totalInstructors: 0, // TODO: Map to /api/v1/teachers if required by future schema
+      usersList: [], // TODO: Requires pagination via /api/v1/students and /api/v1/teachers
+      metrics: data
     }, { status: 200 });
 
   } catch (err) {
-    // CRITICAL: Log the actual error message to Netlify logs so you can read it
     console.error("Master administrative metrics engine failure:", err.message);
     return NextResponse.json({ 
       error: err.message,

@@ -1,57 +1,40 @@
-import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 
 export async function middleware(request) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          supabaseResponse = NextResponse.next({
-            request,
-          });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
-
-  // Refresh auth session
-  const { data: { user } } = await supabase.auth.getUser();
-
   const path = request.nextUrl.pathname;
+  const sessionToken = request.cookies.get('bearilly_session')?.value;
+
+  let user = null;
+  if (sessionToken) {
+    try {
+      const response = await fetch(`${process.env.BEARILLY_API_URL}/api/v1/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${sessionToken}`,
+          'X-Bearilly-API-Key': process.env.BEARILLY_API_KEY
+        }
+      });
+      if (response.ok) {
+        user = await response.json();
+      }
+    } catch (e) {
+      // Session invalid or API unreachable
+    }
+  }
 
   // 1. Unauthenticated users trying to access /dashboard -> redirect to /login
   if (!user && path.startsWith('/dashboard')) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // 2. Authenticated users trying to access /dashboard -> check scholar status
+  // 2. Authenticated users trying to access /dashboard -> check status
+  // TODO: Map scholarship/status verification to Bearilly student profile endpoint
   if (user && path.startsWith('/dashboard')) {
-    const { data: scholarRecord } = await supabase
-      .from('scholarship_students')
-      .select('status')
-      .or(`user_id.eq.${user.id},email.eq.${user.email}`)
-      .maybeSingle();
-
-    // Block only if they are a scholar AND their status isn't verified
-    if (scholarRecord && scholarRecord.status !== 'verified') {
+    if (user.status !== 'verified') {
       return NextResponse.redirect(new URL('/scholarship-pending', request.url));
     }
   }
 
-  return supabaseResponse;
+  return NextResponse.next();
 }
 
 export const config = {

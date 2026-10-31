@@ -1,8 +1,12 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function WelcomeOnboarding() {
+  const router = useRouter();
+  const [user, setUser] = useState(null);
+
   const backgroundSlideshow = [
     'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1600&auto=format&fit=crop&q=80',
     'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=1600&auto=format&fit=crop&q=80',
@@ -17,6 +21,41 @@ export default function WelcomeOnboarding() {
     }, 6000);
     return () => clearInterval(bgTimer);
   }, []);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch('/api/v1/auth/me', {
+          credentials: 'same-origin'
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data);
+        }
+      } catch (error) {
+        console.error('Error fetching user session:', error);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const handleWorkspaceClick = async (e) => {
+    e.preventDefault();
+    try {
+      // Track onboarding completion as a progress event
+      await fetch('/api/v1/progress/events', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ kind: 'onboarding_completed' }),
+        credentials: 'same-origin'
+      });
+    } catch (error) {
+      console.error('Error updating onboarding state:', error);
+    }
+    router.push('/dashboard');
+  };
 
   return (
     <div className="min-h-screen relative overflow-hidden text-white selection:bg-red-500/20 antialiased font-sans flex items-center justify-center p-4">
@@ -44,7 +83,6 @@ export default function WelcomeOnboarding() {
         <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] z-20" />
       </div>
 
-      {/* Onboarding Box Panel */}
       <div className="relative z-30 w-full max-w-md border border-white/10 bg-black/50 backdrop-blur-xl p-8 shadow-2xl space-y-6 text-center">
         
         <div className="flex flex-col justify-center items-center relative select-none mx-auto">
@@ -70,9 +108,13 @@ export default function WelcomeOnboarding() {
           </p>
         </div>
 
-        <div className="pt-2">
-          <Link href="/dashboard" className="block w-full text-center rounded-none bg-red-600 py-3.5 text-xs font-bold uppercase tracking-widest text-white hover:bg-white hover:text-black transition-all duration-300 shadow-lg shadow-red-600/10">
+        <div className="pt-2 space-y-4">
+          <Link href="/dashboard" onClick={handleWorkspaceClick} className="block w-full text-center rounded-none bg-red-600 py-3.5 text-xs font-bold uppercase tracking-widest text-white hover:bg-white hover:text-black transition-all duration-300 shadow-lg shadow-red-600/10">
             Go to Workspace
+          </Link>
+          
+          <Link href="/dashboard/playground" className="block w-full text-center rounded-none border border-white/10 bg-white/5 py-3.5 text-xs font-bold uppercase tracking-widest text-white hover:bg-white hover:text-black transition-all duration-300">
+            AI Playground
           </Link>
         </div>
       </div>

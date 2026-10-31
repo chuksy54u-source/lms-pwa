@@ -2,10 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/utils/supabase/client';
 
 export default function InstructorDashboard() {
-  const supabase = createClient();
   const router = useRouter();
   
   const [activeTab, setActiveTab] = useState('grading');
@@ -19,13 +17,10 @@ export default function InstructorDashboard() {
   
   const [moduleTitle, setModuleTitle] = useState('');
   const [moduleOrder, setModuleOrder] = useState('1');
-  const [moduleFile, setModuleFile] = useState(null);
 
   const [lessonTitle, setLessonTitle] = useState('');
   const [lessonOrder, setLessonOrder] = useState('1');
   const [lessonDescription, setLessonDescription] = useState('');
-  const [lessonExample, setLessonExample] = useState('');
-  const [lessonFile, setLessonFile] = useState(null);
   
   const [quizQuestion, setQuizQuestion] = useState('');
   const [optA, setOptA] = useState('');
@@ -37,293 +32,167 @@ export default function InstructorDashboard() {
   const [assignmentTitle, setAssignmentTitle] = useState('');
   const [submissionRequirements, setSubmissionRequirements] = useState('');
   const [evaluationCriteria, setEvaluationCriteria] = useState('');
-  const [assignmentFile, setAssignmentFile] = useState(null); 
 
-  const [gradesInput, setGradesInput] = useState({});
+  const [pgStudentId, setPgStudentId] = useState('');
+  const [pgResult, setPgResult] = useState(null);
 
   useEffect(() => {
     checkSecurityAndLoad();
   }, []);
 
+  useEffect(() => {
+    if (selectedCourse) {
+      fetchCourseData(selectedCourse);
+    }
+  }, [selectedCourse]);
+
   const checkSecurityAndLoad = async () => {
     setLoading(true);
     try {
-      const { data: { user }, error: authErr } = await supabase.auth.getUser();
-      if (authErr || !user) {
-        setIsAuthorized(false);
-        setLoading(false);
-        return;
-      }
-
-      const { data: profile, error: profErr } = await supabase
-        .from('profiles')
-        .select('is_instructor')
-        .eq('id', user.id)
-        .single();
-
-      if (profErr || !profile?.is_instructor) {
-        setIsAuthorized(false);
-        setLoading(false);
-        return;
-      }
-
+      const res = await fetch('/api/v1/teachers');
+      if (!res.ok) throw new Error();
       setIsAuthorized(true);
-      await fetchInstructorTelemetry();
-
+      await fetchCourses();
     } catch (err) {
-      console.error("Security interception error:", err.message);
       setIsAuthorized(false);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchInstructorTelemetry = async () => {
+  const fetchCourses = async () => {
     try {
-      const { data: uploadData, error: uploadErr } = await supabase
-        .from('assignment_uploads')
-        .select('id, user_id, full_name, assignment_name, course_id, document_url, grade, status, created_at')
-        .order('created_at', { ascending: false });
-
-      if (uploadErr) throw uploadErr;
-      setUploads(uploadData || []);
-
-      const { data: courseData, error: courseErr } = await supabase
-        .from('courses')
-        .select('id, title');
-
-      if (courseErr) throw courseErr;
-      setCourses(courseData || []);
-      if (courseData?.length > 0) setSelectedCourse(courseData[0].id);
-
+      const res = await fetch('/api/v1/courses');
+      const data = await res.json();
+      if (res.ok) {
+        setCourses(data || []);
+        if (data?.length > 0) setSelectedCourse(data[0].id);
+      }
     } catch (err) {
-      alert(`Telemetry sync failure: ${err.message}`);
+      console.error("Course sync failure:", err.message);
+    }
+  };
+
+  const fetchCourseData = async (courseId) => {
+    try {
+      const res = await fetch(`/api/v1/courses/${courseId}/results`);
+      const data = await res.json();
+      if (res.ok) {
+        const mapped = (data || []).map(r => ({
+          id: r.student_id,
+          user_id: r.student_id,
+          full_name: r.student_name,
+          assignment_name: `Course Progress: ${r.overall_percent}%`,
+          document_url: '#',
+          grade: r.overall_percent,
+          status: r.overall_percent >= 50 ? 'Verified' : 'Pending',
+          created_at: new Date().toISOString()
+        }));
+        setUploads(mapped);
+      }
+    } catch (err) {
+      console.error("Telemetry sync failure:", err.message);
     }
   };
 
   const handleCommitGrade = async (uploadId) => {
-    const scoreValue = gradesInput[uploadId];
-    if (!scoreValue) {
-      alert("Input a valid score metric before committing data updates.");
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('assignment_uploads')
-        .update({ grade: parseInt(scoreValue, 10), status: 'Graded' })
-        .eq('id', uploadId);
-
-      if (error) throw error;
-      alert("Grade entry updated successfully!");
-      fetchInstructorTelemetry(); 
-    } catch (err) {
-      alert(`Database write exception: ${err.message}`);
-    }
+    alert("Manual grade override is currently handled via Bearilly Assessment Submissions. TODO: Implement POST /api/v1/submissions/:id/grade");
   };
 
-  const handleVerifyStudent = async (uploadId) => {
-    try {
-      const { error } = await supabase
-        .from('assignment_uploads')
-        .update({ status: 'Verified' })
-        .eq('id', uploadId);
-
-      if (error) throw error;
-      alert("Submission status updated to Verified.");
-      fetchInstructorTelemetry();
-    } catch (err) {
-      alert(`Verification error: ${err.message}`);
-    }
-  };
-
-  // 1. DEPLOY MODULE PIPELINE
   const handleDeployModule = async (e) => {
     e.preventDefault();
-    if (!moduleTitle || !selectedCourse) {
-      alert("Please complete required structural fields.");
-      return;
-    }
-
+    if (!moduleTitle || !selectedCourse) return;
     try {
-      let finalFileUrl = null;
-
-      if (moduleFile) {
-        const fileExt = moduleFile.name.split('.').pop();
-        const fileName = `${selectedCourse}-mod-${Date.now()}.${fileExt}`;
-        const filePath = `module_assets/${fileName}`;
-
-        const { error: uploadErr } = await supabase.storage
-          .from('course-materials') 
-          .upload(filePath, moduleFile);
-
-        if (uploadErr) throw uploadErr;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('course-materials')
-          .getPublicUrl(filePath);
-
-        finalFileUrl = publicUrl;
-      }
-
-      const { error } = await supabase
-        .from('modules') 
-        .insert([{
-          course_id: selectedCourse,
-          title: moduleTitle,
-          module_notes_url: finalFileUrl, 
-          sort_order: parseInt(moduleOrder, 10),
-          start_page: null 
-        }]);
-
-      if (error) throw error;
-
+      const res = await fetch(`/api/v1/courses/${selectedCourse}/units`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: moduleTitle })
+      });
+      if (!res.ok) throw new Error(await res.text());
       alert(`Module segment [${moduleTitle}] injected successfully!`);
       setModuleTitle('');
-      setModuleFile(null);
       setModuleOrder(prev => String(parseInt(prev, 10) + 1));
-
     } catch (err) {
       alert(`Module deployment failure: ${err.message}`);
     }
   };
 
-  // 2. DEPLOY LESSON PIPELINE
   const handleDeployLesson = async (e) => {
     e.preventDefault();
-    if (!lessonTitle || !selectedCourse) {
-      alert("Please ensure a target course is selected.");
-      return;
-    }
-
-    try {
-      let finalContentUrl = null;
-
-      if (lessonFile) {
-        const fileExt = lessonFile.name.split('.').pop();
-        const fileName = `${selectedCourse}-les-${Date.now()}.${fileExt}`;
-        const filePath = `lesson_assets/${fileName}`;
-
-        const { error: uploadErr } = await supabase.storage
-          .from('course-materials')
-          .upload(filePath, lessonFile);
-
-        if (uploadErr) throw uploadErr;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('course-materials')
-          .getPublicUrl(filePath);
-
-        finalContentUrl = publicUrl;
-      }
-
-      const { error } = await supabase
-        .from('lessons')
-        .insert([{
-          course_id: selectedCourse,
-          title: lessonTitle,
-          sort_order: parseInt(lessonOrder, 10),
-          description: lessonDescription || null,
-          example: lessonExample || null,
-          content_url: finalContentUrl
-        }]);
-
-      if (error) throw error;
-
-      alert(`Lesson node [${lessonTitle}] uploaded and linked successfully!`);
-      setLessonTitle('');
-      setLessonFile(null);
-      setLessonDescription('');
-      setLessonExample('');
-      setLessonOrder(prev => String(parseInt(prev, 10) + 1));
-
-    } catch (err) {
-      alert(`Lesson deployment failure: ${err.message}`);
-    }
+    alert("Lesson deployment is currently managed via the Bearilly Course Builder. TODO: Implement POST /api/v1/courses/:id/units/:uid/lessons");
   };
 
-  // 3. DEPLOY QUIZ PIPELINE
   const handleDeployQuiz = async (e) => {
     e.preventDefault();
-    if (!quizQuestion || !optA || !optB || !optC || !optD || !correctAnswer) {
-      alert("Please complete all fields and explicitly assign a correct answer option.");
-      return;
-    }
-
-    const optionsArray = [optA, optB, optC, optD];
-
+    if (!quizQuestion || !optA || !optB || !optC || !optD || !correctAnswer) return;
     try {
-      const { error } = await supabase
-        .from('quizzes')
-        .insert([{
-          course_id: selectedCourse,
-          question: quizQuestion,
-          options: optionsArray,
-          correct_answer: correctAnswer
-        }]);
-
-      if (error) throw error;
-
-      alert("Quiz question node successfully linked to backend schema!");
-      setQuizQuestion('');
-      setOptA('');
-      setOptB('');
-      setOptC('');
-      setOptD('');
-      setCorrectAnswer('');
+      const res = await fetch(`/api/v1/courses/${selectedCourse}/assessments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: "Quick Quiz",
+          pass_mark: 60,
+          questions: [{
+            type: "mcq",
+            points: 1,
+            prompt: quizQuestion,
+            options: [optA, optB, optC, optD],
+            correct_index: [optA, optB, optC, optD].indexOf(correctAnswer)
+          }],
+          max_attempts: 3
+        })
+      });
+      if (!res.ok) throw new Error(await res.text());
+      alert("Quiz question node successfully linked to Bearilly assessment engine!");
     } catch (err) {
       alert(`Quiz injection failure: ${err.message}`);
     }
   };
 
-  // 4. DEPLOY ASSIGNMENT PIPELINE (Matches schema keys)
   const handleDeployAssignment = async (e) => {
     e.preventDefault();
-    if (!assignmentTitle || !selectedCourse) {
-      alert("Please complete core assignment parameters.");
-      return;
-    }
-
+    if (!assignmentTitle || !selectedCourse) return;
     try {
-      let finalFileUrl = null;
-
-      if (assignmentFile) {
-        const fileExt = assignmentFile.name.split('.').pop();
-        const fileName = `${selectedCourse}-assign-${Date.now()}.${fileExt}`;
-        const filePath = `assignment_templates/${fileName}`;
-
-        const { error: uploadErr } = await supabase.storage
-          .from('course-materials') 
-          .upload(filePath, assignmentFile);
-
-        if (uploadErr) throw uploadErr;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('course-materials')
-          .getPublicUrl(filePath);
-
-        finalFileUrl = publicUrl;
-      }
-
-      const { error } = await supabase
-        .from('assignments')
-        .insert([{
-          course_id: selectedCourse,
+      const res = await fetch(`/api/v1/courses/${selectedCourse}/assessments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           title: assignmentTitle,
-          submission_requirements: submissionRequirements || null,
-          evaluation_criteria: evaluationCriteria || null,
-          file_url: finalFileUrl
-        }]);
-
-      if (error) throw error;
-
+          pass_mark: 50,
+          questions: [{
+            type: "short",
+            points: 10,
+            prompt: submissionRequirements,
+            model_answer: evaluationCriteria
+          }]
+        })
+      });
+      if (!res.ok) throw new Error(await res.text());
       alert(`Assignment [${assignmentTitle}] deployed successfully!`);
-      setAssignmentTitle('');
-      setSubmissionRequirements('');
-      setEvaluationCriteria('');
-      setAssignmentFile(null);
     } catch (err) {
       alert(`Assignment deployment failure: ${err.message}`);
+    }
+  };
+
+  const handleFetchMood = async () => {
+    if (!pgStudentId) return;
+    try {
+      const res = await fetch(`/api/v1/students/${pgStudentId}/tutor-state`);
+      const data = await res.json();
+      setPgResult(data);
+    } catch (err) {
+      setPgResult({ error: err.message });
+    }
+  };
+
+  const handleFetchProgress = async () => {
+    if (!pgStudentId) return;
+    try {
+      const res = await fetch(`/api/v1/students/${pgStudentId}/progress`);
+      const data = await res.json();
+      setPgResult(data);
+    } catch (err) {
+      setPgResult({ error: err.message });
     }
   };
 
@@ -377,19 +246,34 @@ export default function InstructorDashboard() {
         >
           Curriculum Injector Hub
         </button>
+        <button
+          onClick={() => setActiveTab('playground')}
+          className={`px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all font-mono border-t border-x ${
+            activeTab === 'playground' ? 'bg-white text-black border-white' : 'bg-transparent text-slate-500 border-transparent hover:text-slate-300'
+          }`}
+        >
+          Playground Terminal
+        </button>
       </div>
 
       <div className="pt-4">
         {activeTab === 'grading' && (
           <div className="space-y-4">
-            <h3 className="text-xs font-bold font-mono uppercase text-slate-400 tracking-wider">Incoming Student Documents Log</h3>
+            <div className="flex justify-between items-center">
+              <h3 className="text-xs font-bold font-mono uppercase text-slate-400 tracking-wider">Course Performance Matrix</h3>
+              <select value={selectedCourse} onChange={(e) => setSelectedCourse(e.target.value)} className="bg-black border border-white/20 p-2 text-[10px] text-white focus:border-white focus:outline-none rounded-sm font-mono uppercase">
+                {courses.map(c => (
+                  <option key={c.id} value={c.id}>{c.title}</option>
+                ))}
+              </select>
+            </div>
             <div className="overflow-x-auto border border-white/10 bg-[#0d0d12] rounded-sm">
               <table className="w-full text-left font-mono text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-white/10 bg-white/[0.02] text-slate-400 uppercase text-[9px] tracking-widest">
                     <th className="p-4 font-semibold">Student Name</th>
-                    <th className="p-4 font-semibold">Document Topic</th>
-                    <th className="p-4 font-semibold">Track Asset</th>
+                    <th className="p-4 font-semibold">Metric</th>
+                    <th className="p-4 font-semibold">Asset</th>
                     <th className="p-4 font-semibold">Status Flag</th>
                     <th className="p-4 font-semibold">Grade Score</th>
                     <th className="p-4 font-semibold text-right">Actions</th>
@@ -398,27 +282,24 @@ export default function InstructorDashboard() {
                 <tbody className="divide-y divide-white/5">
                   {uploads.length === 0 ? (
                     <tr>
-                      <td colSpan="6" className="p-8 text-center text-slate-600 text-[11px]">No active assignment uploads found inside database.</td>
+                      <td colSpan="6" className="p-8 text-center text-slate-600 text-[11px]">No active student data found for this course.</td>
                     </tr>
                   ) : (
                     uploads.map((file) => (
                       <tr key={file.id} className="hover:bg-white/[0.01] transition-colors">
-                        <td className="p-4 text-white text-[11px] font-bold truncate max-w-[155px]" title={file.user_id}>
+                        <td className="p-4 text-white text-[11px] font-bold truncate max-w-[155px]">
                           {file.full_name || 'Anonymous Scholar'}
                         </td>
                         <td className="p-4"><div className="font-bold text-white uppercase text-[11px]">{file.assignment_name}</div></td>
-                        <td className="p-4"><a href={file.document_url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline inline-flex items-center">Download Document ↗</a></td>
+                        <td className="p-4"><span className="text-slate-500 italic">Bearilly Managed</span></td>
                         <td className="p-4">
-                          <span className={`px-2 py-0.5 rounded-sm text-[9px] font-bold uppercase border ${file.status === 'Verified' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : file.status === 'Graded' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>{file.status}</span>
+                          <span className={`px-2 py-0.5 rounded-sm text-[9px] font-bold uppercase border ${file.status === 'Verified' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>{file.status}</span>
                         </td>
                         <td className="p-4">
-                          {file.status === 'Graded' || file.status === 'Verified' ? <span className="text-white font-bold">{file.grade} %</span> : (
-                            <input type="number" placeholder="%" value={gradesInput[file.id] || ''} onChange={(e) => setGradesInput(prev => ({ ...prev, [file.id]: e.target.value }))} className="w-20 bg-black border border-white/20 px-2 py-1 text-white rounded-sm focus:border-white focus:outline-none" />
-                          )}
+                          <span className="text-white font-bold">{file.grade} %</span>
                         </td>
                         <td className="p-4 text-right space-x-2">
-                          <button onClick={() => handleCommitGrade(file.id)} disabled={file.status === 'Graded' || file.status === 'Verified'} className="px-3 py-1 bg-white disabled:bg-white/5 text-black disabled:text-slate-500 text-[10px] font-bold uppercase tracking-wider rounded-sm transition-all hover:bg-slate-200">Save Grade</button>
-                          <button onClick={() => handleVerifyStudent(file.id)} disabled={file.status === 'Verified'} className="px-3 py-1 bg-emerald-600 disabled:bg-emerald-900/50 text-white text-[10px] font-bold uppercase tracking-wider rounded-sm transition-all hover:bg-emerald-500">Verify</button>
+                          <button onClick={() => handleCommitGrade(file.id)} className="px-3 py-1 bg-white text-black text-[10px] font-bold uppercase tracking-wider rounded-sm transition-all hover:bg-slate-200">View Details</button>
                         </td>
                       </tr>
                     ))
@@ -434,7 +315,7 @@ export default function InstructorDashboard() {
             
             <div className="grid grid-cols-4 gap-1 border-b border-white/5 pb-4">
               <button onClick={() => setInjectorType('module')} className={`py-2 text-[9px] font-mono font-bold uppercase border tracking-wider transition-all ${injectorType === 'module' ? 'bg-white text-black border-white' : 'bg-white/[0.02] text-slate-400 border-white/10 hover:border-white/20'}`}>
-                + Module
+                + Unit
               </button>
               <button onClick={() => setInjectorType('lesson')} className={`py-2 text-[9px] font-mono font-bold uppercase border tracking-wider transition-all ${injectorType === 'lesson' ? 'bg-white text-black border-white' : 'bg-white/[0.02] text-slate-400 border-white/10 hover:border-white/20'}`}>
                 + Lesson
@@ -451,18 +332,17 @@ export default function InstructorDashboard() {
               <label className="text-slate-400 uppercase text-[10px] font-bold tracking-wider">Target Course Pipeline</label>
               <select value={selectedCourse} onChange={(e) => setSelectedCourse(e.target.value)} className="bg-black border border-white/20 p-2 text-white focus:border-white focus:outline-none rounded-sm">
                 {courses.map(c => (
-                  <option key={c.id} value={c.id}>{c.id.toUpperCase()} - {c.title}</option>
+                  <option key={c.id} value={c.id}>{c.title}</option>
                 ))}
               </select>
             </div>
 
-            {/* PIPELINE 1: CORE MODULE CONFIGURATION */}
             {injectorType === 'module' && (
               <form onSubmit={handleDeployModule} className="space-y-4 font-mono text-xs">
                 <div className="grid grid-cols-3 gap-4">
                   <div className="col-span-2 flex flex-col space-y-1.5">
-                    <label className="text-slate-400 uppercase text-[10px] font-bold tracking-wider">Module Title</label>
-                    <input required type="text" placeholder="e.g., Module 1: Introduction" value={moduleTitle} onChange={(e) => setModuleTitle(e.target.value)} className="w-full bg-black border border-white/20 p-2 text-white focus:border-white focus:outline-none rounded-sm" />
+                    <label className="text-slate-400 uppercase text-[10px] font-bold tracking-wider">Unit Title</label>
+                    <input required type="text" placeholder="e.g., Unit 1: Introduction" value={moduleTitle} onChange={(e) => setModuleTitle(e.target.value)} className="w-full bg-black border border-white/20 p-2 text-white focus:border-white focus:outline-none rounded-sm" />
                   </div>
                   <div className="flex flex-col space-y-1.5">
                     <label className="text-slate-400 uppercase text-[10px] font-bold tracking-wider">Sort Order</label>
@@ -470,16 +350,15 @@ export default function InstructorDashboard() {
                   </div>
                 </div>
                 <div className="flex flex-col space-y-1.5">
-                  <label className="text-slate-400 uppercase text-[10px] font-bold tracking-wider">Attach Module Notes Document (.pdf)</label>
-                  <input type="file" accept=".pdf" onChange={(e) => setModuleFile(e.target.files[0])} className="bg-black border border-white/20 p-2 text-slate-400 focus:border-white focus:outline-none rounded-sm file:bg-white/10 file:border-none file:text-white file:text-[10px] file:uppercase file:px-2 file:py-0.5 file:mr-2" />
+                  <label className="text-slate-400 uppercase text-[10px] font-bold tracking-wider">Attach Unit Notes (.pdf) - TODO: API Upload</label>
+                  <input type="file" accept=".pdf" disabled className="bg-black border border-white/20 p-2 text-slate-600 focus:border-white focus:outline-none rounded-sm file:bg-white/10 file:border-none file:text-white file:text-[10px] file:uppercase file:px-2 file:py-0.5 file:mr-2" />
                 </div>
                 <button type="submit" className="w-full mt-2 py-3 bg-red-600 hover:bg-red-500 border border-red-600 text-white text-[10px] font-bold uppercase tracking-widest transition-all">
-                  Inject Module Block into Pipeline
+                  Inject Unit Block into Pipeline
                 </button>
               </form>
             )}
 
-            {/* PIPELINE 2: LESSON ASSIGNMENT */}
             {injectorType === 'lesson' && (
               <form onSubmit={handleDeployLesson} className="space-y-4 font-mono text-xs">
                 <div className="grid grid-cols-3 gap-4">
@@ -492,36 +371,22 @@ export default function InstructorDashboard() {
                     <input required type="number" min="1" value={lessonOrder} onChange={(e) => setLessonOrder(e.target.value)} className="w-full bg-black border border-white/20 p-2 text-white focus:border-white focus:outline-none rounded-sm" />
                   </div>
                 </div>
-
-                <div className="flex flex-col space-y-1.5">
-                  <label className="text-slate-400 uppercase text-[10px] font-bold tracking-wider">Upload Lesson Documentation/Media (.pdf / .docx / .mp4)</label>
-                  <input type="file" onChange={(e) => setLessonFile(e.target.files[0])} className="bg-black border border-white/20 p-2 text-slate-400 focus:border-white focus:outline-none rounded-sm file:bg-white/10 file:border-none file:text-white file:text-[10px] file:uppercase file:px-2 file:py-0.5 file:mr-2" />
-                </div>
-
                 <div className="flex flex-col space-y-1.5">
                   <label className="text-slate-400 uppercase text-[10px] font-bold tracking-wider">Description</label>
-                  <textarea rows="2" placeholder="Brief outline of lesson milestones..." value={lessonDescription} onChange={(e) => setLessonDescription(e.target.value)} className="w-full bg-black border border-white/20 p-2 text-white font-sans focus:border-white focus:outline-none resize-none rounded-sm" />
+                  <textarea rows="2" placeholder="Brief outline..." value={lessonDescription} onChange={(e) => setLessonDescription(e.target.value)} className="w-full bg-black border border-white/20 p-2 text-white font-sans focus:border-white focus:outline-none resize-none rounded-sm" />
                 </div>
-
-                <div className="flex flex-col space-y-1.5">
-                  <label className="text-slate-400 uppercase text-[10px] font-bold tracking-wider">Example / Case Study Reference</label>
-                  <textarea rows="2" placeholder="Code blocks or structured text examples..." value={lessonExample} onChange={(e) => setLessonExample(e.target.value)} className="w-full bg-black border border-white/20 p-2 text-white font-mono focus:border-white focus:outline-none resize-none rounded-sm" />
-                </div>
-
                 <button type="submit" className="w-full mt-2 py-3 bg-red-600 hover:bg-red-500 text-white text-[10px] font-bold uppercase tracking-widest transition-all">
-                  Upload Lesson Node to Selected Course
+                  Upload Lesson Node (Managed via Bearilly)
                 </button>
               </form>
             )}
 
-            {/* PIPELINE 3: QUIZ WORKSPACE INJECTOR */}
             {injectorType === 'quiz' && (
               <form onSubmit={handleDeployQuiz} className="space-y-4 font-mono text-xs">
                 <div className="flex flex-col space-y-1.5">
                   <label className="text-slate-400 uppercase text-[10px] font-bold tracking-wider">Question Prompt</label>
                   <input type="text" placeholder="e.g., Highlight the primary layer component protocol." value={quizQuestion} onChange={(e) => setQuizQuestion(e.target.value)} className="bg-black border border-white/20 p-2 text-white focus:border-white focus:outline-none rounded-sm" />
                 </div>
-
                 <div className="space-y-2">
                   <label className="text-slate-400 uppercase text-[10px] font-bold tracking-wider block">Answer Alternatives Matrix</label>
                   <div className="grid grid-cols-2 gap-2">
@@ -531,7 +396,6 @@ export default function InstructorDashboard() {
                     <input type="text" placeholder="Option D" value={optD} onChange={(e) => setOptD(e.target.value)} className="bg-black border border-white/20 p-2 text-white focus:border-white focus:outline-none rounded-sm" />
                   </div>
                 </div>
-
                 <div className="flex flex-col space-y-1.5">
                   <label className="text-slate-400 uppercase text-[10px] font-bold tracking-wider">Exact Correct String Key Match</label>
                   <select value={correctAnswer} onChange={(e) => setCorrectAnswer(e.target.value)} className="bg-black border border-white/20 p-2 text-white focus:border-white focus:outline-none rounded-sm">
@@ -542,42 +406,63 @@ export default function InstructorDashboard() {
                     {optD && <option value={optD}>D: {optD}</option>}
                   </select>
                 </div>
-
                 <button type="submit" className="w-full mt-2 py-3 bg-blue-600 hover:bg-blue-500 border border-blue-600 text-white text-[10px] font-bold uppercase tracking-widest transition-all">
-                  Link Quiz MCQ Node into Live Subsystem
+                  Link Quiz MCQ Node into Bearilly Subsystem
                 </button>
               </form>
             )}
 
-            {/* PIPELINE 4: ASSIGNMENT WORKSPACE INJECTOR */}
             {injectorType === 'assignment' && (
               <form onSubmit={handleDeployAssignment} className="space-y-4 font-mono text-xs">
                 <div className="flex flex-col space-y-1.5">
                   <label className="text-slate-400 uppercase text-[10px] font-bold tracking-wider">Assignment Name/Title</label>
                   <input required type="text" placeholder="e.g., Fluid Layout Build Task" value={assignmentTitle} onChange={(e) => setAssignmentTitle(e.target.value)} className="bg-black border border-white/20 p-2 text-white focus:border-white focus:outline-none rounded-sm" />
                 </div>
-
-                <div className="flex flex-col space-y-1.5">
-                  <label className="text-slate-400 uppercase text-[10px] font-bold tracking-wider">Attach Starter Asset / Template File (.zip, .pdf)</label>
-                  <input type="file" onChange={(e) => setAssignmentFile(e.target.files[0])} className="bg-black border border-white/20 p-2 text-slate-400 focus:border-white focus:outline-none rounded-sm file:bg-white/10 file:border-none file:text-white file:text-[10px] file:uppercase file:px-2 file:py-0.5 file:mr-2" />
-                </div>
-
                 <div className="flex flex-col space-y-1.5">
                   <label className="text-slate-400 uppercase text-[10px] font-bold tracking-wider">Submission Requirements</label>
-                  <textarea rows="3" placeholder="Outline file formatting, deadlines, or environment setup parameters..." value={submissionRequirements} onChange={(e) => setSubmissionRequirements(e.target.value)} className="bg-black border border-white/20 p-2 text-white focus:border-white focus:outline-none resize-none rounded-sm" />
+                  <textarea rows="3" placeholder="Outline parameters..." value={submissionRequirements} onChange={(e) => setSubmissionRequirements(e.target.value)} className="bg-black border border-white/20 p-2 text-white focus:border-white focus:outline-none resize-none rounded-sm" />
                 </div>
-
                 <div className="flex flex-col space-y-1.5">
-                  <label className="text-slate-400 uppercase text-[10px] font-bold tracking-wider">Evaluation Criteria / Grading Metrics</label>
-                  <textarea rows="3" placeholder="Specify grading breakdown metrics (e.g., Syntax: 40%, Design: 60%)..." value={evaluationCriteria} onChange={(e) => setEvaluationCriteria(e.target.value)} className="bg-black border border-white/20 p-2 text-white focus:border-white focus:outline-none resize-none rounded-sm" />
+                  <label className="text-slate-400 uppercase text-[10px] font-bold tracking-wider">Evaluation Criteria / AI Model Answer</label>
+                  <textarea rows="3" placeholder="Specify grading breakdown..." value={evaluationCriteria} onChange={(e) => setEvaluationCriteria(e.target.value)} className="bg-black border border-white/20 p-2 text-white focus:border-white focus:outline-none resize-none rounded-sm" />
                 </div>
-
                 <button type="submit" className="w-full mt-2 py-3 bg-amber-600 hover:bg-amber-500 border border-amber-600 text-white text-[10px] font-bold uppercase tracking-widest transition-all">
-                  Deploy Assignment Node with File Template
+                  Deploy Assignment Node to Bearilly
                 </button>
               </form>
             )}
+          </div>
+        )}
 
+        {activeTab === 'playground' && (
+          <div className="max-w-xl mx-auto border border-white/10 bg-[#0d0d12] p-8 rounded-sm space-y-6">
+            <div className="border-b border-white/5 pb-4">
+              <h3 className="text-xs font-bold font-mono uppercase text-white tracking-wider">Bearilly AI Playground</h3>
+              <p className="text-[10px] text-slate-500 font-mono mt-1">Test real-time student telemetry and mood analysis.</p>
+            </div>
+
+            <div className="flex flex-col space-y-1.5 font-mono text-xs">
+              <label className="text-slate-400 uppercase text-[10px] font-bold tracking-wider">Target Student ID</label>
+              <input type="text" placeholder="Enter Student UUID..." value={pgStudentId} onChange={(e) => setPgStudentId(e.target.value)} className="bg-black border border-white/20 p-2 text-white focus:border-white focus:outline-none rounded-sm" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <button onClick={handleFetchMood} className="py-3 bg-white text-black text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-slate-200">
+                Query Bear Mood
+              </button>
+              <button onClick={handleFetchProgress} className="py-3 bg-white/10 text-white text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-white/20 border border-white/10">
+                Query Progress
+              </button>
+            </div>
+
+            {pgResult && (
+              <div className="mt-4 p-4 bg-black border border-white/5 rounded-sm">
+                <label className="text-slate-500 uppercase text-[9px] font-bold tracking-widest block mb-2">API Response Output</label>
+                <pre className="text-[10px] text-emerald-400 font-mono overflow-x-auto">
+                  {JSON.stringify(pgResult, null, 2)}
+                </pre>
+              </div>
+            )}
           </div>
         )}
       </div>

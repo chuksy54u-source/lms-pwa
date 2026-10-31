@@ -2,21 +2,19 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/utils/supabase/client'; 
 
 export default function SignUp() {
   const router = useRouter();
-  const supabase = createClient();
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('student'); // 'student' or 'instructor'
+  const [role, setRole] = useState('student');
   
-  // Scholarship States
   const [isScholar, setIsScholar] = useState(false);
   const [scholarshipAmount, setScholarshipAmount] = useState('');
   const [currency, setCurrency] = useState('USD');
+  const [inviteCode, setInviteCode] = useState('');
   
   const [loading, setLoading] = useState(false);
 
@@ -39,40 +37,41 @@ export default function SignUp() {
     e.preventDefault();
     setLoading(true);
 
-    const isScholarStudent = role === 'student' && isScholar;
-    
-    // Redirect URL embedded inside the email confirmation link
-    const redirectUrl = isScholarStudent
-      ? `${window.location.origin}/scholarship-pending`
-      : `${window.location.origin}/welcome`;
+    try {
+      if (role === 'instructor') {
+        alert('Instructor registration is currently handled by school administration.');
+        setLoading(false);
+        return;
+      }
 
-    const { data, error } = await supabase.auth.signUp({
-      email: email,
-      password: password,
-      options: {
-        data: { 
-          email: email, // Explicitly pass email to metadata
+      const response = await fetch('/api/v1/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
           full_name: fullName,
-          role: role,
-          is_instructor: role === 'instructor',
-          is_scholar: isScholarStudent,
-          scholarship_amount: isScholarStudent ? parseFloat(scholarshipAmount) || 0 : null,
-          currency: isScholarStudent ? currency : null,
-        }, 
-        emailRedirectTo: redirectUrl,
-      },
-    });
+          invite_code: inviteCode
+        }),
+      });
 
-    setLoading(false);
+      if (!response.ok) throw new Error('Registration failed');
 
-    if (error) {
-      alert(error.message);
-    } else {
+      // TODO: Scholarship data (isScholar, scholarshipAmount, currency) is not currently 
+      // supported by the Bearilly core registration flow. 
+      // This data should be persisted via a separate PATCH /api/v1/students/:id 
+      // call after the student is created, or handled via a custom school metadata flow.
+
+      const isScholarStudent = role === 'student' && isScholar;
       if (isScholarStudent) {
         router.push('/verify-email-scholarship');
       } else {
         router.push('/verify-email');
       }
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -123,7 +122,6 @@ export default function SignUp() {
           </p>
         </div>
 
-        {/* ROLE SELECTOR BUTTON GROUP */}
         <div className="space-y-1 font-mono">
           <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Account Pipeline Type</label>
           <div className="grid grid-cols-2 gap-2">
@@ -189,7 +187,18 @@ export default function SignUp() {
             />
           </div>
 
-          {/* SCHOLARSHIP SECTION FOR STUDENTS */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Invite Code</label>
+            <input 
+              required
+              type="text" 
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value)}
+              placeholder="PASTE-THE-SCHOOLS-INVITE-CODE"
+              className="w-full rounded-none border border-white/10 bg-white/5 px-4 py-3 text-xs text-white placeholder-slate-500 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 transition-all"
+            />
+          </div>
+
           {role === 'student' && (
             <div className="space-y-3 pt-2 border-t border-white/10">
               <div className="flex items-center space-x-3 cursor-pointer">
@@ -255,9 +264,21 @@ export default function SignUp() {
           </button>
         </form>
 
-        <div className="text-center text-xs text-slate-400 pt-2 border-t border-white/5">
-          Already have an account?{' '}
-          <Link href="/login" className="text-blue-400 font-bold hover:underline">Sign In</Link>
+        <div className="text-center text-xs text-slate-400 pt-2 border-t border-white/5 space-y-3">
+          <div>
+            Already have an account?{' '}
+            <Link href="/login" className="text-blue-400 font-bold hover:underline">Sign In</Link>
+          </div>
+          
+          <div className="pt-2 border-t border-white/5">
+            <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-2">Experimental Access</p>
+            <Link 
+              href="/playground" 
+              className="inline-block w-full py-2 border border-dashed border-white/20 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300 hover:bg-white/5 hover:text-white transition-all"
+            >
+              Enter Playground
+            </Link>
+          </div>
         </div>
       </div>
     </div>

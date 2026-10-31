@@ -1,39 +1,27 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { createClient } from '@/utils/supabase/client';
 
 export default function DashboardLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
-  
-  // Keep supabase instance stable using a ref to prevent unnecessary instantiations
-  const supabaseRef = useRef(null);
-  if (!supabaseRef.current) {
-    supabaseRef.current = createClient();
-  }
-  const supabase = supabaseRef.current;
   
   const [userName, setUserName] = useState('Loading...');
   const [userEmail, setUserEmail] = useState('');
   const [privileges, setPrivileges] = useState({ isInstructor: false, isAdmin: false });
   const [checkingAuth, setCheckingAuth] = useState(true);
   
-  // Mobile navigation drawer toggle state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Determine role context based on URL pathname matches
   const isInstructorRoute = pathname.startsWith('/dashboard/instructor');
   const isAdminRoute = pathname.startsWith('/dashboard/admin');
 
-  // Dynamic visual badges
   let roleLabel = 'Student Profile';
   if (isInstructorRoute) roleLabel = 'Instructor Command';
   if (isAdminRoute) roleLabel = 'System Admin';
 
-  // Auto-close the mobile sidebar drawer when the user navigates
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [pathname]);
@@ -44,40 +32,36 @@ export default function DashboardLayout({ children }) {
     const fetchUserSessionAndRoles = async () => {
       try {
         setCheckingAuth(true);
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL || ''}/api/v1/auth/me`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('bearilly_session_token')}`
+          }
+        });
         
-        if (userError || !user) {
+        if (!res.ok) {
           if (isCurrentRequest) {
             router.push('/login');
           }
           return;
         }
 
+        const data = await res.json();
+        const user = data.user || data;
+
         if (!isCurrentRequest) return;
 
         setUserEmail(user.email || '');
 
-        // Resolve Display Name with a clean fallback chain
-        let nameToDisplay = user.user_metadata?.full_name;
+        let nameToDisplay = user.full_name || user.name || user.user_metadata?.full_name;
         if (!nameToDisplay && user.email) {
           const emailPrefix = user.email.split('@')[0];
           nameToDisplay = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
         }
         setUserName(nameToDisplay || 'User');
 
-        // Fetch permissions safely from public profile
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('is_instructor, is_admin')
-          .eq('id', user.id)
-          .maybeSingle(); // Prevents throwing 406 errors on blank profile rows
-
-        if (profileError) {
-          console.error('Failed to resolve database security clear profile:', profileError.message);
-        }
-
-        const userIsAdmin = !!profile?.is_admin;
-        const userIsInstructor = !!profile?.is_instructor;
+        const role = user.role || data.role;
+        const userIsAdmin = role === 'platform_admin' || role === 'school_admin' || !!user.is_admin;
+        const userIsInstructor = role === 'teacher' || role === 'instructor' || !!user.is_instructor;
 
         if (isCurrentRequest) {
           setPrivileges({
@@ -86,7 +70,6 @@ export default function DashboardLayout({ children }) {
           });
         }
 
-        // Shield redirects: verify role limits before exposing content
         if (pathname.startsWith('/dashboard/admin') && !userIsAdmin) {
           if (isCurrentRequest) {
             router.replace('/dashboard');
@@ -114,23 +97,16 @@ export default function DashboardLayout({ children }) {
 
     fetchUserSessionAndRoles();
 
-    // Clean up to resolve any concurrent async race conditions
     return () => {
       isCurrentRequest = false;
     };
-  }, [router, pathname, supabase]);
+  }, [router, pathname]);
 
   const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch (err) {
-      console.error('Error during sign out procedure:', err);
-    } finally {
-      router.push('/login');
-    }
+    localStorage.removeItem('bearilly_session_token');
+    router.push('/login');
   };
 
-  // Prevent layout shifts or state leaks during route transitions
   if (checkingAuth && (isAdminRoute || isInstructorRoute)) {
     return (
       <div className="min-h-screen bg-[#09090b] text-slate-400 font-mono text-xs flex items-center justify-center">
@@ -142,7 +118,6 @@ export default function DashboardLayout({ children }) {
     );
   }
 
-  // Helper render function to keep navigation DRY and consistent between PC and Mobile sidebars
   const renderNavLinks = () => {
     if (isAdminRoute) {
       return (
@@ -205,6 +180,14 @@ export default function DashboardLayout({ children }) {
           Courses
         </Link>
         <Link 
+          href="/dashboard/playground" 
+          className={`block px-3 py-2 text-xs font-bold uppercase tracking-wider transition-all ${
+            pathname.startsWith('/dashboard/playground') ? 'bg-white text-black' : 'text-slate-400 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          Playground
+        </Link>
+        <Link 
           href="/dashboard/certificates" 
           className={`block px-3 py-2 text-xs font-bold uppercase tracking-wider transition-all ${
             pathname === '/dashboard/certificates' ? 'bg-white text-black' : 'text-slate-400 hover:text-white hover:bg-white/5'
@@ -213,7 +196,6 @@ export default function DashboardLayout({ children }) {
           Certificates
         </Link>
 
-        {/* Conditional Quick-Jump Admin Link */}
         {privileges.isAdmin && (
           <Link 
             href="/dashboard/admin" 
@@ -223,7 +205,6 @@ export default function DashboardLayout({ children }) {
           </Link>
         )}
 
-        {/* Conditional Quick-Jump Instructor Link */}
         {privileges.isInstructor && (
           <Link 
             href="/dashboard/instructor" 
@@ -241,23 +222,18 @@ export default function DashboardLayout({ children }) {
   return (
     <div className="min-h-screen bg-[#09090b] text-slate-100 flex antialiased font-sans">
       
-      {/* Sidebar navigation (PC Only - Unchanged) */}
       <aside className="relative w-64 border-r border-white/5 bg-black/60 backdrop-blur-md flex flex-col justify-between p-6 shrink-0 hidden md:flex overflow-hidden">
         
-        {/* Background Image Texture */}
         <div 
           className="absolute inset-0 z-0 bg-cover bg-center opacity-40 pointer-events-none filter saturate-50"
           style={{ 
             backgroundImage: `url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80')` 
           }}
         />
-        {/* Backdrop mask to maximize WCAG contrast ratings */}
         <div className="absolute inset-0 bg-black/80 z-0 pointer-events-none" />
 
-        {/* Safe Sidebar Content Layer */}
         <div className="space-y-8 z-10 relative">
           
-          {/* Dynamic User Profile Card */}
           <div className="border-b border-white/5 pb-4 space-y-1.5">
             <div className={`text-[10px] font-bold tracking-wider uppercase font-mono px-1.5 py-0.5 rounded-sm inline-block border ${
               isAdminRoute 
@@ -278,13 +254,11 @@ export default function DashboardLayout({ children }) {
             </div>
           </div>
 
-          {/* Context-Aware Navigation Links */}
           <nav className="space-y-1">
             {renderNavLinks()}
           </nav>
         </div>
 
-        {/* Sign Out Trigger */}
         <button 
           onClick={handleSignOut}
           className="w-full text-left px-3 py-2 text-xs font-bold uppercase tracking-widest text-red-400 hover:bg-red-500/10 transition-all font-mono z-10 relative"
@@ -293,22 +267,18 @@ export default function DashboardLayout({ children }) {
         </button>
       </aside>
 
-      {/* MOBILE DRAWER NAVIGATION MENU (Optimized for Mobile) */}
       <div className={`fixed inset-0 z-50 md:hidden transition-opacity duration-300 ${
         isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
       }`}>
-        {/* Backdrop overlay */}
         <div 
           onClick={() => setIsMobileMenuOpen(false)}
           className="absolute inset-0 bg-black/80 backdrop-blur-sm"
         />
         
-        {/* Drawer panel */}
         <aside className={`absolute top-0 left-0 bottom-0 w-72 bg-[#09090b] border-r border-white/5 p-6 flex flex-col justify-between transition-transform duration-300 ease-out ${
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}>
           <div className="space-y-8">
-            {/* Header / Brand label & close button */}
             <div className="flex items-center justify-between border-b border-white/5 pb-4">
               <div className="space-y-1">
                 <div className={`text-[9px] font-bold tracking-wider uppercase font-mono px-1.5 py-0.5 rounded-sm inline-block border ${
@@ -333,13 +303,11 @@ export default function DashboardLayout({ children }) {
               </button>
             </div>
 
-            {/* Navigation options */}
             <nav className="space-y-2">
               {renderNavLinks()}
             </nav>
           </div>
 
-          {/* Footer exit actions */}
           <div className="pt-6 border-t border-white/5 space-y-4">
             <div className="text-[11px] text-slate-500 truncate font-mono">{userEmail}</div>
             <button 
@@ -352,12 +320,9 @@ export default function DashboardLayout({ children }) {
         </aside>
       </div>
 
-      {/* Main content viewport */}
       <main className="flex-1 p-8 overflow-y-auto max-w-6xl mx-auto w-full">
-        {/* Mobile top bar */}
         <div className="md:hidden flex items-center justify-between border-b border-white/5 pb-4 mb-6">
           <div className="flex items-center space-x-3">
-            {/* Hamburger menu trigger */}
             <button 
               onClick={() => setIsMobileMenuOpen(true)}
               className="p-1 -ml-1 text-slate-400 hover:text-white transition-colors"

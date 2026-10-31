@@ -1,13 +1,8 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-// Import the Supabase client initializer matching your utility path
-import { createClient } from '@/utils/supabase/client'; 
 
 export default function Contact() {
-  // Initialize the Supabase client in-component
-  const supabase = createClient();
-
   const [inquiryType, setInquiryType] = useState('student');
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -40,20 +35,25 @@ export default function Contact() {
     }
 
     try {
-      // Insert the submission directly into your Supabase contact_messages table
-      const { error } = await supabase
-        .from('contact_messages')
-        .insert([
-          {
-            name: formData.name.trim(),
-            email: formData.email.trim().toLowerCase(),
-            inquiry_type: inquiryType,
-            academic_sector: formData.faculty,
-            message: formData.message.trim()
-          }
-        ]);
+      // Route submission to the Bearilly consultation endpoint
+      const response = await fetch('/api/v1/contact/consultation', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          full_name: formData.name.trim(),
+          email: formData.email.trim().toLowerCase(),
+          message: formData.message.trim(),
+          interest: inquiryType === 'student' ? 'Students' : 'Schools',
+          organization: formData.faculty
+        }),
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error('Failed to transmit data to Bearilly.');
+      }
 
       setSubmitted(true);
       setFormData({ name: '', email: '', faculty: 'Software Engineering & Development', message: '' });
@@ -63,7 +63,7 @@ export default function Contact() {
       }, 5000);
 
     } catch (err) {
-      console.error('Error submitting message to Supabase:', err.message);
+      console.error('Error submitting message to Bearilly:', err.message);
       setErrorMsg('Failed to send message. Please try again or email us directly.');
     } finally {
       setLoading(false);
@@ -459,6 +459,48 @@ export default function Contact() {
                 </div>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* Section 5: Interactive Playground */}
+        <section className="space-y-8 text-left">
+          <div className="max-w-2xl">
+            <span className="text-xs font-bold text-amber-400 tracking-widest uppercase">Innovation Lab</span>
+            <h2 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight mt-1">The Digital Playground</h2>
+            <p className="text-xs md:text-sm text-slate-400 leading-relaxed mt-2">
+              Experiment with our core technologies in a sandboxed environment. Test code snippets, preview UI components, and explore the Ornate design system live.
+            </p>
+          </div>
+
+          <div className="border border-white/10 bg-white/[0.01] p-6 md:p-10 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-red-600/10 blur-3xl rounded-full -mr-16 -mt-16"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <h3 className="text-lg font-bold text-white uppercase">Live Component Preview</h3>
+                  <p className="text-xs text-slate-400">Toggle between different faculty themes and interactive states.</p>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <button className="px-4 py-2 bg-red-600 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-red-700 transition-colors">Red Theme</button>
+                  <button className="px-4 py-2 bg-blue-600 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-blue-700 transition-colors">Blue Theme</button>
+                  <button className="px-4 py-2 border border-white/20 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-white hover:text-black transition-colors">Ghost State</button>
+                </div>
+                <div className="p-4 bg-black border border-white/5 font-mono text-[10px] text-blue-400">
+                  <code>{`// Ornate Design System v1.0\nconst Playground = () => {\n  return <Button variant="primary" />\n}`}</code>
+                </div>
+              </div>
+              <div className="relative h-48 md:h-64 bg-gradient-to-br from-slate-900 to-black border border-white/10 flex items-center justify-center overflow-hidden">
+                <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+                <div className="relative z-10 animate-pulse">
+                  <div className="w-16 h-16 border-2 border-red-500 rotate-45 flex items-center justify-center">
+                    <div className="w-8 h-8 bg-blue-600 rounded-full"></div>
+                  </div>
+                </div>
+                <div className="absolute bottom-4 right-4 text-[8px] font-mono text-slate-500 uppercase tracking-widest">
+                  Rendering Engine: Active
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 

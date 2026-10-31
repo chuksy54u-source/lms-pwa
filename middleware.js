@@ -1,63 +1,49 @@
-import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 
 export async function middleware(request) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          supabaseResponse = NextResponse.next({
-            request,
-          });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
-
-  // Refresh auth session
-  const { data: { user } } = await supabase.auth.getUser();
-
   const path = request.nextUrl.pathname;
 
-  // 1. Unauthenticated users trying to access /dashboard -> redirect to /login
-  if (!user && path.startsWith('/dashboard')) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
+  // Define protected routes including the requested playground
+  const isProtectedRoute = path.startsWith('/dashboard') || path.startsWith('/playground');
 
-  // 2. Authenticated users trying to access /dashboard -> check scholar status
-  if (user && path.startsWith('/dashboard')) {
-    const { data: scholarRecord } = await supabase
-      .from('scholarship_students')
-      .select('status')
-      .or(`user_id.eq.${user.id},email.eq.${user.email}`)
-      .maybeSingle();
+  if (isProtectedRoute) {
+    try {
+      // Bearilly session check via the verified /api/v1/auth/me endpoint
+      // We pass the request cookies to maintain the student's short-lived session
+      const response = await fetch(`${process.env.BEARILLY_API_URL || 'https://api.bearilly.com'}/api/v1/auth/me`, {
+        headers: {
+          'Cookie': request.headers.get('cookie') || '',
+          'Authorization': `Bearer ${process.env.BEARILLY_API_KEY}`
+        },
+      });
 
-    // Block only if they are a scholar AND their status isn't verified
-    if (scholarRecord && scholarRecord.status !== 'verified') {
-      return NextResponse.redirect(new URL('/scholarship-pending', request.url));
+      if (!response.ok) {
+        return NextResponse.redirect(new URL('/login', request.url));
+      }
+
+      const user = await response.json();
+
+      // 2. Authenticated users trying to access protected routes -> check scholar status
+      // Bearilly is now the system of record. 
+      // TODO: Verify if 'scholarship_status' is the correct field name in Bearilly person metadata.
+      // Retaining safe boundary for the existing scholarship verification logic.
+      if (user && user.scholarship_status && user.scholarship_status !== 'verified') {
+        return NextResponse.redirect(new URL('/scholarship-pending', request.url));
+      }
+    } catch (error) {
+      // If the Bearilly API is unreachable or returns an error, redirect to login for safety
+      return NextResponse.redirect(new URL('/login', request.url));
     }
   }
 
-  return supabaseResponse;
+  return NextResponse.next();
 }
 
 export const config = {
   matcher: [
     /*
      * Match all request paths except static files, images, etc.
+     * Preserved from original configuration.
      */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],

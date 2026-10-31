@@ -1,67 +1,50 @@
 'use client';
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { createClient } from '@/utils/supabase/client';
 
 function CertificateViewerContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const supabase = createClient();
 
-  const courseId = searchParams.get('verified_id');
-  const userId = searchParams.get('user');
+  const code = searchParams.get('code');
 
   const [loading, setLoading] = useState(true);
   const [panelData, setPanelData] = useState(null);
 
   useEffect(() => {
-    if (!courseId || !userId) {
+    if (!code) {
       setLoading(false);
       return;
     }
 
-    const fetchReviewDetails = async () => {
+    const fetchCertificateDetails = async () => {
       setLoading(true);
       try {
-        // 1. Fetch data from certificates table
-        const { data: cert } = await supabase
-          .from('certificates')
-          .select('issued_at, certificateimage_url')
-          .eq('user_id', userId)
-          .eq('course_id', courseId)
-          .maybeSingle();
+        const response = await fetch(`/api/v1/certificates/verify/${code}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
 
-        // 2. Fetch course specifics
-        const { data: course } = await supabase
-          .from('courses')
-          .select('title, category, description')
-          .eq('id', courseId)
-          .maybeSingle();
+        if (!response.ok) throw new Error('Failed to fetch certificate data');
+        const data = await response.json();
 
-        // 3. Fetch assignment submission metrics (including file and grades)
-        const { data: uploadInfo } = await supabase
-          .from('assignment_uploads')
-          .select('full_name, document_url, grade, score, created_at')
-          .eq('user_id', userId)
-          .eq('course_id', courseId)
-          .limit(1)
-          .maybeSingle();
-
-        if (course) {
+        if (data) {
           setPanelData({
-            courseTitle: course.title,
-            courseCategory: course.category || 'General',
-            courseDescription: course.description || 'No course curriculum node description logged.',
-            studentName: uploadInfo?.full_name || 'Distinguished Student',
-            assignmentFile: uploadInfo?.document_url || '#',
-            assignmentScore: uploadInfo?.score || uploadInfo?.grade || '100%',
-            submittedAt: uploadInfo?.created_at ? new Date(uploadInfo.created_at).toLocaleDateString('en-US', {
+            courseTitle: data.course_title || 'Verified Course',
+            courseCategory: data.category || 'General',
+            courseDescription: data.description || 'No course curriculum node description logged.',
+            studentName: data.student_name || 'Distinguished Student',
+            assignmentFile: data.document_url || '#',
+            assignmentScore: data.score || '100%',
+            submittedAt: data.created_at ? new Date(data.created_at).toLocaleDateString('en-US', {
               year: 'numeric', month: 'short', day: 'numeric'
             }) : 'Verified Node',
-            issuedAt: cert?.issued_at ? new Date(cert.issued_at).toLocaleDateString('en-US', {
+            issuedAt: data.issued_at ? new Date(data.issued_at).toLocaleDateString('en-US', {
               year: 'numeric', month: 'long', day: 'numeric'
             }) : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-            cardVisual: cert?.certificateimage_url || 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?q=80&w=600&auto=format&fit=crop'
+            cardVisual: data.certificateimage_url || 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?q=80&w=600&auto=format&fit=crop'
           });
         }
       } catch (err) {
@@ -71,8 +54,8 @@ function CertificateViewerContent() {
       }
     };
 
-    fetchReviewDetails();
-  }, [courseId, userId, supabase]);
+    fetchCertificateDetails();
+  }, [code]);
 
   if (loading) {
     return (
@@ -95,7 +78,6 @@ function CertificateViewerContent() {
 
   return (
     <div className="min-h-screen bg-[#0d0d12] text-slate-200 p-6 md:p-12 flex flex-col items-center justify-start font-mono">
-      {/* Upper Navigation Bar */}
       <div className="w-full max-w-4xl flex justify-between items-center border border-white/10 bg-black/40 p-4 mb-8 rounded-sm backdrop-blur-md">
         <button 
           onClick={() => router.push('/dashboard/certificates')}
@@ -108,10 +90,7 @@ function CertificateViewerContent() {
         </span>
       </div>
 
-      {/* Main Layout Grid */}
       <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-        
-        {/* Left Column: Visual Card Display */}
         <div className="md:col-span-1 relative border border-white/10 rounded-sm p-5 min-h-[220px] flex flex-col justify-between overflow-hidden shadow-2xl group">
           <div 
             className="absolute inset-0 bg-cover bg-center z-0"
@@ -121,7 +100,7 @@ function CertificateViewerContent() {
 
           <div className="relative z-10 flex justify-between items-start">
             <span className="text-[8px] font-bold uppercase text-white bg-black/60 border border-white/10 px-1.5 py-0.5 rounded-sm">
-              Node: {courseId}
+              Code: {code}
             </span>
             <span className="text-[9px] text-amber-400 font-bold uppercase bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-sm">
               Certified
@@ -138,16 +117,13 @@ function CertificateViewerContent() {
           </div>
         </div>
 
-        {/* Right Column: Performance Data Breakdown & Audit Info */}
         <div className="md:col-span-2 space-y-6">
-          {/* Section 1: Course Summary */}
           <div className="border border-white/10 bg-black/20 p-6 rounded-sm space-y-3">
             <span className="text-[9px] text-slate-500 uppercase tracking-widest block font-bold">Curriculum Focus</span>
             <h2 className="text-xl font-bold uppercase tracking-tight text-white">{panelData.courseTitle}</h2>
             <p className="text-slate-400 text-xs leading-relaxed font-sans font-light">{panelData.courseDescription}</p>
           </div>
 
-          {/* Section 2: Metrics Sheet */}
           <div className="border border-white/10 bg-black/40 p-6 rounded-sm space-y-4">
             <span className="text-[9px] text-slate-500 uppercase tracking-widest block font-bold">Performance Analytics</span>
             
@@ -166,7 +142,6 @@ function CertificateViewerContent() {
               </div>
             </div>
 
-            {/* Action Area for Upload Links */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-2">
               <div className="space-y-0.5">
                 <span className="text-[8px] text-slate-500 uppercase tracking-wider block">Archived Deliverable</span>
@@ -187,7 +162,6 @@ function CertificateViewerContent() {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );

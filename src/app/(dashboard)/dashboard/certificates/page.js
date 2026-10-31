@@ -1,37 +1,21 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { createClient } from '@/utils/supabase/client';
 
 export default function CertificatesPage() {
-  const supabase = createClient();
   const [loading, setLoading] = useState(true);
   const [earnedCertificates, setEarnedCertificates] = useState([]);
+  const [verifyCode, setVerifyCode] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [verifyResult, setVerifyResult] = useState(null);
 
   useEffect(() => {
     const fetchCertificates = async () => {
       setLoading(true);
       try {
-        const { data: { user }, authErr } = await supabase.auth.getUser();
-        if (authErr || !user) return;
-
-        // Simply read rows from the certificates table
-        const { data: certsData, error: certsError } = await supabase
-          .from('certificates')
-          .select(`
-            id,
-            certificate_url,
-            certificateimage_url,
-            course_id,
-            courses (
-              title,
-              category
-            )
-          `)
-          .eq('user_id', user.id);
-
-        if (certsError) throw certsError;
-        setEarnedCertificates(certsData || []);
-
+        // TODO: There is currently no verified Bearilly endpoint to list earned student certificates.
+        // Public verification is available via GET /api/v1/certificates/verify/:code.
+        // Retaining safe stub until student certificate listing endpoint is supported by Bearilly API.
+        setEarnedCertificates([]);
       } catch (err) {
         console.error("Error loading certificates registry:", err.message);
       } finally {
@@ -40,7 +24,34 @@ export default function CertificatesPage() {
     };
 
     fetchCertificates();
-  }, [supabase]);
+  }, []);
+
+  const handleVerify = async (e) => {
+    e?.preventDefault?.();
+    const trimmed = verifyCode.trim();
+    if (!trimmed) return;
+    setVerifying(true);
+    setVerifyResult(null);
+    try {
+      const res = await fetch(`/api/v1/certificates/verify/${encodeURIComponent(trimmed)}`, {
+        credentials: 'same-origin',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setVerifyResult({ valid: true, ...data });
+      } else {
+        const errData = await res.json().catch(() => null);
+        setVerifyResult({
+          valid: false,
+          message: errData?.error || errData?.message || 'Certificate code not found or invalid.'
+        });
+      }
+    } catch {
+      setVerifyResult({ valid: false, message: 'Network error communicating with verification registry.' });
+    } finally {
+      setVerifying(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -79,7 +90,11 @@ export default function CertificatesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
           {earnedCertificates.map((cert) => {
-            const cardBgImage = cert.certificateimage_url || 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?q=80&w=600&auto=format&fit=crop';
+            const cardBgImage = cert.certificateimage_url || cert.image_url || 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?q=80&w=600&auto=format&fit=crop';
+            const courseTitle = cert.courses?.title || cert.course?.title || cert.title || 'Unknown Curriculum Node';
+            const courseCategory = cert.courses?.category || cert.course?.category || cert.category || 'General';
+            const courseId = cert.course_id || cert.course?.id || cert.id;
+            const certUrl = cert.certificate_url || (cert.code ? `/dashboard/certificates/view?code=${encodeURIComponent(cert.code)}` : `/dashboard/certificates/view?id=${cert.id}`);
 
             return (
               <div 
@@ -95,7 +110,7 @@ export default function CertificatesPage() {
                 <div className="space-y-1.5 flex-1 relative z-10">
                   <div className="flex justify-between items-start">
                     <span className="text-[9px] text-white font-bold bg-black/80 px-1.5 py-0.5 rounded-sm uppercase tracking-wider border border-white/10">
-                      ID: {cert.course_id}
+                      ID: {courseId}
                     </span>
                     <span className="text-[10px] text-emerald-400 font-bold uppercase bg-black/80 px-2 py-0.5 rounded-sm border border-emerald-500/30">
                       ✓ Verified
@@ -105,10 +120,10 @@ export default function CertificatesPage() {
                   <div className="flex justify-between items-start gap-4 pt-3">
                     <div className="space-y-1 max-w-[75%]">
                       <h4 className="text-sm font-bold text-white uppercase tracking-tight leading-snug drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
-                        {cert.courses?.title || 'Unknown Curriculum Node'}
+                        {courseTitle}
                       </h4>
                       <p className="text-[10px] text-slate-200 uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] font-bold">
-                        Field: {cert.courses?.category || 'General'}
+                        Field: {courseCategory}
                       </p>
                     </div>
 
@@ -123,7 +138,7 @@ export default function CertificatesPage() {
 
                 <div className="pt-2 border-t border-white/10 flex items-center justify-end relative z-10">
                   <a 
-                    href={cert.certificate_url}
+                    href={certUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="px-3 py-1.5 bg-white hover:bg-slate-200 text-black font-bold uppercase text-[9px] tracking-wider rounded-sm transition-all shadow-xl"
@@ -136,6 +151,80 @@ export default function CertificatesPage() {
           })}
         </div>
       )}
+
+      {/* Verification Playground */}
+      <div className="border border-white/10 bg-black/60 backdrop-blur-md p-6 rounded-sm relative z-10 space-y-4">
+        <div>
+          <span className="text-[9px] uppercase tracking-widest px-2 py-0.5 bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-bold">
+            Verification Playground
+          </span>
+          <h3 className="text-sm font-bold uppercase tracking-tight text-white mt-2">
+            Verify Certificate by Code
+          </h3>
+          <p className="text-slate-300 text-xs mt-1 font-sans">
+            Instantly query any Bearilly certificate credential to validate its authenticity against the registry.
+          </p>
+        </div>
+
+        <form onSubmit={handleVerify} className="flex flex-col sm:flex-row gap-2 pt-1">
+          <input
+            type="text"
+            value={verifyCode}
+            onChange={(e) => setVerifyCode(e.target.value)}
+            placeholder="ENTER CERTIFICATE CODE (E.G. CERT-1024-XYZ)"
+            className="flex-1 bg-black/80 border border-white/10 px-3 py-2 text-xs text-white placeholder-slate-500 rounded-sm focus:outline-none focus:border-cyan-500/50 font-mono uppercase"
+          />
+          <button
+            type="submit"
+            disabled={verifying || !verifyCode.trim()}
+            className="px-4 py-2 bg-white hover:bg-slate-200 disabled:opacity-50 text-black font-bold uppercase text-[9px] tracking-wider rounded-sm transition-all shadow-xl"
+          >
+            {verifying ? 'Verifying...' : 'Verify Credential'}
+          </button>
+        </form>
+
+        {verifyResult && (
+          <div className={`p-4 rounded-sm border text-xs font-mono space-y-1 ${
+            verifyResult.valid 
+              ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' 
+              : 'border-rose-500/30 bg-rose-500/10 text-rose-300'
+          }`}>
+            <div className="flex items-center justify-between">
+              <span className="font-bold uppercase tracking-wider">
+                {verifyResult.valid ? '✓ Certificate Authenticated' : '✕ Verification Failed'}
+              </span>
+              {verifyResult.valid && (verifyResult.code || verifyCode) && (
+                <span className="text-[9px] bg-black/60 px-1.5 py-0.5 rounded-sm border border-emerald-500/30">
+                  CODE: {verifyResult.code || verifyCode.trim()}
+                </span>
+              )}
+            </div>
+            {verifyResult.valid ? (
+              <div className="pt-2 text-slate-300 text-[11px] space-y-1 font-sans">
+                <p><span className="text-white font-mono uppercase font-bold text-[10px]">Course:</span> {verifyResult.course_title || verifyResult.course?.title || verifyResult.title || 'Course Completed'}</p>
+                {(verifyResult.student_name || verifyResult.recipient_name || verifyResult.full_name) && (
+                  <p><span className="text-white font-mono uppercase font-bold text-[10px]">Recipient:</span> {verifyResult.student_name || verifyResult.recipient_name || verifyResult.full_name}</p>
+                )}
+                {(verifyResult.issued_at || verifyResult.created_at) && (
+                  <p><span className="text-white font-mono uppercase font-bold text-[10px]">Issued:</span> {new Date(verifyResult.issued_at || verifyResult.created_at).toLocaleDateString()}</p>
+                )}
+                <div className="pt-2">
+                  <a
+                    href={`/dashboard/certificates/view?code=${encodeURIComponent(verifyResult.code || verifyCode.trim())}`}
+                    className="inline-block px-3 py-1 bg-emerald-400 text-black font-bold uppercase text-[9px] tracking-wider rounded-sm hover:bg-emerald-300 transition-all font-mono"
+                  >
+                    Open Certificate View
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <p className="text-rose-200 text-[11px] pt-1 font-sans">
+                {verifyResult.message || 'The specified certificate code does not match any active record in the Bearilly registry.'}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
