@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { PageHead, Button, SearchInput, Chips, Sheet, Input, Callout, ListSkeleton, ErrorState, Avatar, StatusBadge } from '../../../components/ui';
-import { OneTimeSecret } from '../../../components/staff';
+import { PageHead, Button, SearchInput, Chips, Sheet, Input, Callout, ListSkeleton, ErrorState, Avatar } from '../../../components/ui';
+import { OneTimeSecret, StatusBadge } from '../../../components/staff';
 import { useToast } from '../../../components/app/ToastProvider';
 import { apiList, apiPost, apiPatch } from '../../../lib/api/client';
 import ImportPeople from '../../../components/staff/ImportPeople';
