@@ -14,6 +14,15 @@ import { NextResponse } from 'next/server';
 const BEARILLY_URL = process.env.BEARILLY_URL || '';
 const normalizeHostname = (hostname) => hostname.toLowerCase().replace(/^www\./, '');
 
+function getBearillyBaseUrl() {
+  const base = new URL(BEARILLY_URL);
+  const labels = base.hostname.split('.');
+  if (base.hostname.endsWith('.vercel.app') && labels.length >= 4) {
+    base.hostname = labels.slice(1).join('.');
+  }
+  return base;
+}
+
 function isAllowed(pathname) {
   return pathname.startsWith('/api/v1/') &&
     !pathname.startsWith('/api/v1/billing/') && pathname !== '/api/v1/billing' &&
@@ -31,7 +40,7 @@ async function proxyRequest(request, params) {
   }
   let bearillyBase;
   try {
-    bearillyBase = new URL(BEARILLY_URL);
+    bearillyBase = getBearillyBaseUrl();
   } catch {
     console.error('[bearilly-proxy] BEARILLY_URL must be an absolute URL.');
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
@@ -50,10 +59,11 @@ async function proxyRequest(request, params) {
   const headers = new Headers();
   headers.set('Accept', 'application/json');
   if (publicTenant) {
+    url.searchParams.set('host', request.nextUrl.hostname);
     headers.set('x-bearilly-host', request.nextUrl.hostname);
   } else if (publicRegistration) {
     const schoolHost = request.nextUrl.hostname;
-    const tenantUrl = new URL('/api/v1/tenant', BEARILLY_URL);
+    const tenantUrl = new URL('/api/v1/tenant', bearillyBase);
     tenantUrl.searchParams.set('host', schoolHost);
     const tenantResponse = await fetch(tenantUrl, {
       headers: { Accept: 'application/json', 'x-bearilly-host': schoolHost },

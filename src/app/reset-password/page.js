@@ -87,9 +87,11 @@ export default function ResetPassword() {
         // Exchange verified provider identity with Bearilly login bridge
         const bridgeRes = await fetch('/api/bearilly-login', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${sessionAccessToken}`,
+          },
           credentials: 'same-origin',
-          body: JSON.stringify({ access_token: sessionAccessToken }),
         });
 
         if (bridgeRes.ok) {
