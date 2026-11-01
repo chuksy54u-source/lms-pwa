@@ -11,12 +11,28 @@ export default function PlaygroundPage() {
     async function fetchData() {
       try {
         const [gamesRes, matchesRes] = await Promise.all([
-          fetch('/api/v1/playground/games'),
-          fetch('/api/v1/playground/matches?status=active')
+          fetch('/api/v1/playground/games', {
+            credentials: 'same-origin',
+            headers: {
+              'Accept': 'application/json'
+            }
+          }),
+          fetch('/api/v1/playground/matches?status=active', {
+            credentials: 'same-origin',
+            headers: {
+              'Accept': 'application/json'
+            }
+          })
         ]);
         
-        if (gamesRes.ok) setGames(await gamesRes.json());
-        if (matchesRes.ok) setMatches(await matchesRes.json());
+        if (gamesRes.ok) {
+          const data = await gamesRes.json();
+          setGames(Array.isArray(data) ? data : (data.games || []));
+        }
+        if (matchesRes.ok) {
+          const data = await matchesRes.json();
+          setMatches(Array.isArray(data) ? data : (data.matches || []));
+        }
       } catch (err) {
         console.error("Failed to fetch playground data", err);
       } finally {
@@ -27,14 +43,22 @@ export default function PlaygroundPage() {
   }, []);
 
   const startTrainingMatch = async (gameId) => {
-    const res = await fetch('/api/v1/playground/matches', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ game_id: gameId, training: true, difficulty: 'beginner' })
-    });
-    if (res.ok) {
-      const newMatch = await res.json();
-      setMatches((prev) => [...prev, newMatch]);
+    try {
+      const res = await fetch('/api/v1/playground/matches', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ game_id: gameId, training: true, difficulty: 'beginner' })
+      });
+      if (res.ok) {
+        const newMatch = await res.json();
+        setMatches((prev) => [...prev, newMatch]);
+      }
+    } catch (err) {
+      console.error("Failed to start training match", err);
     }
   };
 

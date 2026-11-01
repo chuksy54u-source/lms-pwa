@@ -22,6 +22,7 @@ function CertificateViewerContent() {
       try {
         const response = await fetch(`/api/v1/certificates/verify/${code}`, {
           method: 'GET',
+          credentials: 'same-origin',
           headers: {
             'Content-Type': 'application/json'
           }

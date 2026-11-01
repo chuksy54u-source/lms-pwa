@@ -48,15 +48,18 @@ function AdminDashboardContent() {
   const verifyAdminPrivileges = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/v1/schools');
+      const res = await fetch('/api/v1/schools', {
+        credentials: 'same-origin'
+      });
       const schools = await res.json();
+      const schoolList = Array.isArray(schools) ? schools : (schools?.data || []);
       
-      if (!res.ok || !schools || schools.length === 0) {
+      if (!res.ok || !schoolList || schoolList.length === 0) {
         setIsAuthorized(false);
         return;
       }
 
-      const currentSchool = schools[0];
+      const currentSchool = schoolList[0];
       setIsAuthorized(true);
       setSchoolId(currentSchool.id);
       await fetchAdminData(currentSchool.id);
@@ -78,12 +81,12 @@ function AdminDashboardContent() {
         applicationsRes,
         apiKeysRes
       ] = await Promise.all([
-        fetch(`/api/v1/schools/${id}/dashboard`),
-        fetch(`/api/v1/students`),
-        fetch(`/api/v1/courses`),
-        fetch(`/api/v1/enrolments`),
-        fetch(`/api/v1/schools/${id}/admissions/applications`),
-        fetch(`/api/v1/schools/${id}/api-keys`)
+        fetch(`/api/v1/schools/${id}/dashboard`, { credentials: 'same-origin' }),
+        fetch(`/api/v1/students`, { credentials: 'same-origin' }),
+        fetch(`/api/v1/courses`, { credentials: 'same-origin' }),
+        fetch(`/api/v1/enrolments`, { credentials: 'same-origin' }),
+        fetch(`/api/v1/schools/${id}/admissions/applications`, { credentials: 'same-origin' }),
+        fetch(`/api/v1/schools/${id}/api-keys`, { credentials: 'same-origin' })
       ]);
 
       const dashboard = await dashboardRes.json();
@@ -93,21 +96,27 @@ function AdminDashboardContent() {
       const applicationsData = await applicationsRes.json();
       const apiKeysData = await apiKeysRes.json();
 
-      setStudents(studentsData || []);
-      setCourses(coursesData || []);
-      setEnrolments(enrolmentsData || []);
-      setApplications(applicationsData || []);
-      setApiKeys(apiKeysData || []);
+      const studentsList = Array.isArray(studentsData) ? studentsData : (studentsData?.data || []);
+      const coursesList = Array.isArray(coursesData) ? coursesData : (coursesData?.data || []);
+      const enrolmentsList = Array.isArray(enrolmentsData) ? enrolmentsData : (enrolmentsData?.data || []);
+      const applicationsList = Array.isArray(applicationsData) ? applicationsData : (applicationsData?.applications || applicationsData?.data || []);
+      const keysList = Array.isArray(apiKeysData) ? apiKeysData : (apiKeysData?.api_keys || apiKeysData?.data || []);
 
-      const pendingApps = (applicationsData || []).filter(a => a.status === 'pending' || a.status === 'under_review');
-      const verifiedApps = (applicationsData || []).filter(a => a.status === 'admitted');
+      setStudents(studentsList);
+      setCourses(coursesList);
+      setEnrolments(enrolmentsList);
+      setApplications(applicationsList);
+      setApiKeys(keysList);
+
+      const pendingApps = applicationsList.filter(a => a.status === 'pending' || a.status === 'under_review');
+      const verifiedApps = applicationsList.filter(a => a.status === 'admitted');
 
       setSystemMetrics({
-        totalStudents: dashboard.active_learners || 0,
+        totalStudents: dashboard?.active_learners || (dashboard?.summary ? dashboard.summary.students : 0) || studentsList.length || 0,
         totalInstructors: 0,
-        pendingCount: (coursesData || []).length,
-        pendingEnrollmentsCount: (enrolmentsData || []).filter(e => e.status === 'pending').length,
-        activeEnrollmentsCount: (enrolmentsData || []).filter(e => e.status === 'active' || e.status === 'approved').length,
+        pendingCount: coursesList.length,
+        pendingEnrollmentsCount: enrolmentsList.filter(e => e.status === 'pending').length,
+        activeEnrollmentsCount: enrolmentsList.filter(e => e.status === 'active' || e.status === 'approved').length,
         contactMessagesCount: 0,
         pendingScholarsCount: pendingApps.length,
         verifiedScholarsCount: verifiedApps.length
@@ -127,6 +136,7 @@ function AdminDashboardContent() {
 
       const res = await fetch(`/api/v1/courses`, {
         method: 'POST',
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: formData.title,
@@ -153,6 +163,7 @@ function AdminDashboardContent() {
   };
 
   const toggleInstructorRole = async (userId, currentStatus) => {
+    // TODO: Bearilly teacher endpoints handle teacher creation/roles via POST /api/v1/teachers.
     alert("Staff role management is currently handled via Bearilly Identity settings.");
   };
 
@@ -162,7 +173,8 @@ function AdminDashboardContent() {
         alert(`Enrollment request successfully flagged as ${action}.`);
       } else {
         const res = await fetch(`/api/v1/enrolments/${enrollmentId}`, {
-          method: 'DELETE'
+          method: 'DELETE',
+          credentials: 'same-origin'
         });
         if (!res.ok) throw new Error('Failed to reject enrolment');
         alert(`Enrollment request successfully flagged as ${action}.`);
@@ -174,6 +186,7 @@ function AdminDashboardContent() {
   };
 
   const handleResolveMessage = async (messageId) => {
+    // TODO: Feature safe stub for message resolution
     alert("Support ticket resolution is currently handled via Bearilly Support.");
   };
 
@@ -181,12 +194,14 @@ function AdminDashboardContent() {
     try {
       if (action === 'verified') {
         const res = await fetch(`/api/v1/schools/${schoolId}/admissions/applications/${applicationId}/admit`, {
-          method: 'POST'
+          method: 'POST',
+          credentials: 'same-origin'
         });
         if (!res.ok) throw new Error('Failed to admit applicant');
       } else {
         const res = await fetch(`/api/v1/schools/${schoolId}/admissions/applications/${applicationId}`, {
           method: 'PATCH',
+          credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: 'rejected' })
         });
@@ -631,7 +646,23 @@ function AdminDashboardContent() {
                         </td>
                         <td className="p-4 text-slate-400 text-[10px]">{key.rate_limit_per_minute} RPM</td>
                         <td className="p-4 text-right">
-                          <button className="px-3 py-1 bg-red-500/10 border border-red-500/20 text-red-400 text-[9px] font-bold uppercase tracking-wider rounded-sm hover:bg-red-500/20 transition-all">Revoke</button>
+                          <button 
+                            onClick={async () => {
+                              if (!schoolId || !key.id) return;
+                              try {
+                                await fetch(`/api/v1/schools/${schoolId}/api-keys/${key.id}`, {
+                                  method: 'DELETE',
+                                  credentials: 'same-origin'
+                                });
+                                await fetchAdminData(schoolId);
+                              } catch (err) {
+                                console.error('Failed to revoke API key:', err);
+                              }
+                            }}
+                            className="px-3 py-1 bg-red-500/10 border border-red-500/20 text-red-400 text-[9px] font-bold uppercase tracking-wider rounded-sm hover:bg-red-500/20 transition-all"
+                          >
+                            Revoke
+                          </button>
                         </td>
                       </tr>
                     ))

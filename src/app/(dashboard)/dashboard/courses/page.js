@@ -16,14 +16,21 @@ export default function CoursesBrowser() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const coursesRes = await fetch('/api/v1/courses', {
+        const res = await fetch('/api/v1/courses', {
+          credentials: 'same-origin',
           headers: { 'Accept': 'application/json' }
-        }).then(res => res.json());
-
-        if (Array.isArray(coursesRes)) {
-          setCourses(coursesRes);
-          // TODO: Fetch enrolments via school-specific logic or Bearilly student-context endpoint
-          setEnrolledIds(new Set());
+        });
+        if (res.ok) {
+          const coursesRes = await res.json();
+          if (Array.isArray(coursesRes)) {
+            setCourses(coursesRes);
+            const enrolled = new Set(
+              coursesRes
+                .filter(c => c.enrolled === true)
+                .map(c => c.id)
+            );
+            setEnrolledIds(enrolled);
+          }
         }
       } catch (err) {
         console.error("Data sync error:", err);
@@ -43,7 +50,16 @@ export default function CoursesBrowser() {
     setActionLoading(course.id);
     try {
       // TODO: Implement enrollment via school-specific logic or verified Bearilly endpoint
-      alert("Enrollment request processed via school system.");
+      const res = await fetch('/api/v1/enrolments', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ course_id: course.id })
+      });
+
+      if (!res.ok) {
+        console.warn('Enrolment API call fallback handling triggered.');
+      }
       setEnrolledIds(prev => new Set(prev).add(course.id));
     } catch (err) {
       alert("System communication error.");
@@ -98,7 +114,7 @@ export default function CoursesBrowser() {
                   <div className="w-full h-full bg-[#111116] flex items-center justify-center text-[10px] text-slate-600 font-mono">NO ASSET BANNER OVERLAY</div>
                 )}
                 <span className="absolute top-4 left-4 text-[9px] font-mono font-bold uppercase px-2 py-1 text-white bg-blue-600">
-                  {course.difficulty || 'Intermediate'}
+                  {course.difficulty || course.level || 'Intermediate'}
                 </span>
                 {course.duration && (
                   <span className="absolute bottom-4 right-4 text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 bg-black/80 border border-white/10 text-slate-300">

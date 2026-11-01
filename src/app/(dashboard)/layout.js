@@ -32,9 +32,10 @@ export default function DashboardLayout({ children }) {
     const fetchUserSessionAndRoles = async () => {
       try {
         setCheckingAuth(true);
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BEARILLY_URL || ''}/api/v1/auth/me`, {
+        const res = await fetch('/api/v1/auth/me', {
+          credentials: 'same-origin',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('bearilly_session_token')}`
+            'Accept': 'application/json'
           }
         });
         
@@ -103,7 +104,7 @@ export default function DashboardLayout({ children }) {
   }, [router, pathname]);
 
   const handleSignOut = async () => {
-    localStorage.removeItem('bearilly_session_token');
+    // TODO: Clear server session / school auth provider session if required
     router.push('/login');
   };
 

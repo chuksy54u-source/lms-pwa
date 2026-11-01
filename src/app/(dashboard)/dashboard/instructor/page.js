@@ -10,6 +10,7 @@ export default function InstructorDashboard() {
   const [injectorType, setInjectorType] = useState('module');
   const [loading, setLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [me, setMe] = useState(null);
   
   const [uploads, setUploads] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -41,16 +42,24 @@ export default function InstructorDashboard() {
   }, []);
 
   useEffect(() => {
-    if (selectedCourse) {
+    if (me && selectedCourse) {
       fetchCourseData(selectedCourse);
     }
-  }, [selectedCourse]);
+  }, [selectedCourse, me]);
 
   const checkSecurityAndLoad = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/v1/teachers');
-      if (!res.ok) throw new Error();
+      // Verify identity and role via Bearilly auth/me
+      const authRes = await fetch('/api/v1/auth/me', { credentials: 'same-origin' });
+      if (!authRes.ok) throw new Error('Unauthorized');
+      const userData = await authRes.json();
+      
+      if (userData.role !== 'teacher' && userData.role !== 'school_admin') {
+        throw new Error('Insufficient privileges');
+      }
+      
+      setMe(userData);
       setIsAuthorized(true);
       await fetchCourses();
     } catch (err) {
@@ -62,7 +71,7 @@ export default function InstructorDashboard() {
 
   const fetchCourses = async () => {
     try {
-      const res = await fetch('/api/v1/courses');
+      const res = await fetch('/api/v1/courses', { credentials: 'same-origin' });
       const data = await res.json();
       if (res.ok) {
         setCourses(data || []);
@@ -74,18 +83,21 @@ export default function InstructorDashboard() {
   };
 
   const fetchCourseData = async (courseId) => {
+    if (!me) return;
     try {
-      const res = await fetch(`/api/v1/courses/${courseId}/results`);
+      // Use the teacher dashboard endpoint for learner telemetry
+      const res = await fetch(`/api/v1/teachers/${encodeURIComponent(me.id)}/dashboard`, { credentials: 'same-origin' });
       const data = await res.json();
       if (res.ok) {
-        const mapped = (data || []).map(r => ({
-          id: r.student_id,
-          user_id: r.student_id,
-          full_name: r.student_name,
-          assignment_name: `Course Progress: ${r.overall_percent}%`,
+        const students = data.students || [];
+        const mapped = students.map(s => ({
+          id: s.id,
+          user_id: s.id,
+          full_name: s.full_name,
+          assignment_name: `Average Score: ${s.average_score ?? 0}%`,
           document_url: '#',
-          grade: r.overall_percent,
-          status: r.overall_percent >= 50 ? 'Verified' : 'Pending',
+          grade: s.average_score ?? 0,
+          status: s.needs_help ? 'Needs Help' : 'Verified',
           created_at: new Date().toISOString()
         }));
         setUploads(mapped);
@@ -106,7 +118,8 @@ export default function InstructorDashboard() {
       const res = await fetch(`/api/v1/courses/${selectedCourse}/units`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: moduleTitle })
+        body: JSON.stringify({ title: moduleTitle }),
+        credentials: 'same-origin'
       });
       if (!res.ok) throw new Error(await res.text());
       alert(`Module segment [${moduleTitle}] injected successfully!`);
@@ -140,7 +153,8 @@ export default function InstructorDashboard() {
             correct_index: [optA, optB, optC, optD].indexOf(correctAnswer)
           }],
           max_attempts: 3
-        })
+        }),
+        credentials: 'same-origin'
       });
       if (!res.ok) throw new Error(await res.text());
       alert("Quiz question node successfully linked to Bearilly assessment engine!");
@@ -165,7 +179,8 @@ export default function InstructorDashboard() {
             prompt: submissionRequirements,
             model_answer: evaluationCriteria
           }]
-        })
+        }),
+        credentials: 'same-origin'
       });
       if (!res.ok) throw new Error(await res.text());
       alert(`Assignment [${assignmentTitle}] deployed successfully!`);
@@ -177,7 +192,7 @@ export default function InstructorDashboard() {
   const handleFetchMood = async () => {
     if (!pgStudentId) return;
     try {
-      const res = await fetch(`/api/v1/students/${pgStudentId}/tutor-state`);
+      const res = await fetch(`/api/v1/students/${pgStudentId}/tutor-state`, { credentials: 'same-origin' });
       const data = await res.json();
       setPgResult(data);
     } catch (err) {
@@ -188,7 +203,7 @@ export default function InstructorDashboard() {
   const handleFetchProgress = async () => {
     if (!pgStudentId) return;
     try {
-      const res = await fetch(`/api/v1/students/${pgStudentId}/progress`);
+      const res = await fetch(`/api/v1/students/${pgStudentId}/progress`, { credentials: 'same-origin' });
       const data = await res.json();
       setPgResult(data);
     } catch (err) {

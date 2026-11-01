@@ -32,23 +32,32 @@ export default function Login() {
     setErrorMessage('');
 
     try {
-      // TODO: Use school's existing Auth provider (e.g. Supabase) to verify credentials.
-      // After successful verification, call the server-side proxy which performs:
-      // POST /api/v1/integration/session with the verified member email.
-      
-      const response = await fetch('/api/v1/auth/login', {
+      const bridgeRes = await fetch('/api/bearilly-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), password }),
+        credentials: 'same-origin',
+        body: JSON.stringify({ email: email.trim() }),
       });
 
-      if (!response.ok) {
-        throw new Error('Invalid login credentials.');
+      if (!bridgeRes.ok) {
+        const errData = await bridgeRes.json().catch(() => ({}));
+        throw new Error(errData.error || errData.message || 'Invalid login credentials.');
       }
 
-      const userData = await response.json();
+      const meRes = await fetch('/api/v1/auth/me', {
+        method: 'GET',
+        credentials: 'same-origin',
+        headers: { 'Accept': 'application/json' },
+      });
 
-      if (userData.roles.includes('teacher') || userData.roles.includes('school_admin')) {
+      if (!meRes.ok) {
+        throw new Error('Failed to retrieve user session.');
+      }
+
+      const userData = await meRes.json();
+      const roles = userData.roles || (userData.role ? [userData.role] : []);
+
+      if (roles.includes('teacher') || roles.includes('school_admin')) {
         router.push('/dashboard/instructor');
       } else {
         router.push('/dashboard');

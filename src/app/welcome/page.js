@@ -42,6 +42,16 @@ export default function WelcomeOnboarding() {
   const handleWorkspaceClick = async (e) => {
     e.preventDefault();
     try {
+      if (user?.id) {
+        // Persist onboarding completion to Bearilly student record
+        await fetch(`/api/v1/students/${user.id}/onboarding`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tour_completed: true }),
+          credentials: 'same-origin'
+        });
+      }
+
       // Track onboarding completion as a progress event
       await fetch('/api/v1/progress/events', {
         method: 'POST',

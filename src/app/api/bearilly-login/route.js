@@ -8,10 +8,10 @@ import { NextResponse } from 'next/server';
  * the user is who they say they are.
  *
  * POST  /api/bearilly-login
- * Body: { email: string }   — the verified member email from your own auth session
+ * Authorization: Bearer <school identity-provider access token>
  *
- * The route exchanges the email for a short-lived Bearilly session token and stores
- * it in an HttpOnly Secure SameSite=Lax cookie so the browser never sees the token.
+ * The route verifies the provider token server-side, then exchanges the verified
+ * identity for a short-lived Bearilly session stored in an HttpOnly cookie.
  * The catch-all proxy at /api/v1/[...path]/route.js reads this cookie on every request.
  *
  * BEARILLY_URL and BEARILLY_API_KEY are read server-side only; they are never sent
@@ -21,59 +21,40 @@ import { NextResponse } from 'next/server';
 const BEARILLY_URL = process.env.BEARILLY_URL || '';
 const BEARILLY_API_KEY = process.env.BEARILLY_API_KEY || '';
 const COOKIE_NAME = 'bearilly_session';
+const SCHOOL_COOKIE_NAME = 'bearilly_school_id';
 const COOKIE_MAX_AGE = 14 * 60; // 14 minutes — safely within the 15-min token lifetime
 
 export async function POST(request) {
   try {
-    // The email must come from your own server-side verified session, not from the
-    // request body. TODO: replace this with your actual session verification.
-    const { email } = await request.json();
-    if (!email || typeof email !== 'string') {
-      return NextResponse.json({ error: 'A verified email is required' }, { status: 400 });
+    const providerToken = request.headers.get('authorization') || '';
+    if (!/^Bearer\s+\S+$/i.test(providerToken)) {
+      return NextResponse.json({ error: 'Sign in with the school account first' }, { status: 401 });
     }
-
-    if (!BEARILLY_URL || !BEARILLY_API_KEY) {
-      console.error('[bearilly-login] BEARILLY_URL or BEARILLY_API_KEY env var is not set.');
-      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
-    }
-
-    const upstream = await fetch(`${BEARILLY_URL}/api/v1/integration/session`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${BEARILLY_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email }),
-    });
-
-    if (!upstream.ok) {
-      const err = await upstream.json().catch(() => ({}));
-      return NextResponse.json(
-        { error: err?.error?.message || 'Failed to create Bearilly session' },
-        { status: upstream.status },
-      );
-    }
-
-    const { data } = await upstream.json();
-
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+    if (!supabaseUrl || !supabaseKey) return NextResponse.json({ error: 'School sign-in verification is not configured' }, { status: 500 });
+    const identityResponse = await fetch(new URL('/auth/v1/user', supabaseUrl), { headers: { apikey: supabaseKey, Authorization: providerToken }, cache: 'no-store' });
+    if (!identityResponse.ok) return NextResponse.json({ error: 'The school sign-in session is invalid or expired' }, { status: 401 });
+    const identity = await identityResponse.json();
+    if (!identity.email || !identity.email_confirmed_at) return NextResponse.json({ error: 'The school account must have a verified email' }, { status: 403 });
+    if (!BEARILLY_URL || !BEARILLY_API_KEY) return NextResponse.json({ error: 'Bearilly server configuration is missing' }, { status: 500 });
+    const upstream = await fetch(`${BEARILLY_URL}/api/v1/integration/session`, { method: 'POST', headers: { 'x-bearilly-key': BEARILLY_API_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ email: identity.email }) });
+    const result = await upstream.json();
+    if (!upstream.ok || !result?.data?.token || !result.data.school_id) return NextResponse.json({ error: result?.error?.message || 'Could not connect this account to Bearilly' }, { status: upstream.status || 502 });
     const cookieStore = await cookies();
-    cookieStore.set(COOKIE_NAME, data.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: COOKIE_MAX_AGE,
-    });
-
-    return NextResponse.json({ ok: true, role: data.role });
-  } catch (err) {
-    console.error('[bearilly-login] Unexpected error:', err);
-    return NextResponse.json({ error: 'Unexpected server error' }, { status: 500 });
+    const options = { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: COOKIE_MAX_AGE };
+    cookieStore.set(COOKIE_NAME, result.data.token, options);
+    cookieStore.set(SCHOOL_COOKIE_NAME, result.data.school_id, options);
+    return NextResponse.json({ ok: true, role: result.data.role });
+  } catch (error) {
+    console.error('[bearilly-login] Could not verify or connect the school session:', error);
+    return NextResponse.json({ error: 'Could not connect the verified school sign-in to Bearilly' }, { status: 502 });
   }
 }
 
 export async function DELETE() {
   const cookieStore = await cookies();
   cookieStore.delete(COOKIE_NAME);
+  cookieStore.delete(SCHOOL_COOKIE_NAME);
   return NextResponse.json({ ok: true });
 }

@@ -17,12 +17,18 @@ export default function DashboardHome() {
     const fetchDashboardData = async () => {
       setLoading(true);
       try {
-        // School-specific auth check (e.g., Supabase)
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
+        const meRes = await fetch('/api/v1/auth/me', {
+          credentials: 'same-origin',
+          headers: { 'Accept': 'application/json' }
+        });
 
-        // Use relative proxy path as per BROWSER TRANSPORT CONTRACT
-        const dashboardRes = await fetch(`/api/v1/students/${session.user.id}/dashboard`, {
+        if (!meRes.ok) throw new Error('User not authenticated');
+        const user = await meRes.json();
+
+        if (!user || !user.id) throw new Error('No user identity returned');
+
+        const dashboardRes = await fetch(`/api/v1/students/${user.id}/dashboard`, {
+          credentials: 'same-origin',
           headers: { 'Accept': 'application/json' }
         });
 
@@ -33,23 +39,28 @@ export default function DashboardHome() {
         const progressData = dashboard.progress || {};
         
         const coursesWithProgress = activeCourses.map(course => {
-          const courseProgress = progressData[course.id] || { completed: 0, total: 0 };
-          const percent = courseProgress.total > 0 
-            ? Math.round((courseProgress.completed / courseProgress.total) * 100) 
-            : 0;
+          const courseProgress = progressData[course.id] || {};
+          const total = courseProgress.total ?? courseProgress.lessons_total ?? course.lessons ?? 0;
+          const completed = courseProgress.completed ?? courseProgress.lessons_completed ?? 0;
+          const percent = courseProgress.percent !== undefined 
+            ? Math.round(courseProgress.percent) 
+            : (total > 0 ? Math.round((completed / total) * 100) : 0);
 
           return {
             ...course,
-            totalModulesCount: courseProgress.total,
-            completedModulesCount: courseProgress.completed,
+            totalModulesCount: total,
+            completedModulesCount: completed,
             progressPercent: percent
           };
         });
 
+        const totalCompleted = coursesWithProgress.reduce((acc, curr) => acc + curr.completedModulesCount, 0);
+        const totalModules = coursesWithProgress.reduce((acc, curr) => acc + curr.totalModulesCount, 0);
+
         setStats({
           activeCoursesCount: activeCourses.length,
-          completedModulesCount: Object.values(progressData).reduce((acc, curr) => acc + curr.completed, 0),
-          totalModulesCount: Object.values(progressData).reduce((acc, curr) => acc + curr.total, 0),
+          completedModulesCount: dashboard.completed_modules_count ?? totalCompleted,
+          totalModulesCount: dashboard.total_modules_count ?? totalModules,
           pendingAssignmentsCount: dashboard.pending_assignments_count || 0,
         });
 

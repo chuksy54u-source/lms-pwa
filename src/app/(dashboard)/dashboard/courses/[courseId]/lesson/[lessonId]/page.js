@@ -10,7 +10,7 @@ export default function LessonViewPage({ params: paramsPromise }) {
 
   const [course, setCourse] = useState(null);
   const [currentLesson, setCurrentLesson] = useState(null);
-  const [totalLessons, setTotalLessons] = useState(0);
+  const [flatLessons, setFlatLessons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
   const [hasCompletedCurrent, setHasCompletedCurrent] = useState(false);
@@ -23,6 +23,7 @@ export default function LessonViewPage({ params: paramsPromise }) {
     const fetchLessonData = async () => {
       setLoading(true);
       try {
+        // Fetch lesson details
         const lessonRes = await fetch(`/api/v1/lessons/${lessonId}`, {
           credentials: 'same-origin'
         });
@@ -35,14 +36,36 @@ export default function LessonViewPage({ params: paramsPromise }) {
         const lessonData = await lessonRes.json();
         setCurrentLesson(lessonData);
 
+        // Fetch course details for title
+        const courseRes = await fetch(`/api/v1/courses/${courseId}`, {
+          credentials: 'same-origin'
+        });
+        if (courseRes.ok) {
+          const courseData = await courseRes.json();
+          setCourse(courseData);
+        }
+
+        // Fetch units to build the flat lesson list for navigation
+        const unitsRes = await fetch(`/api/v1/courses/${courseId}/units`, {
+          credentials: 'same-origin'
+        });
+        if (unitsRes.ok) {
+          const unitsData = await unitsRes.json();
+          const flattened = unitsData.flatMap(u => u.lessons || []);
+          setFlatLessons(flattened);
+        }
+
+        // Fetch tutor history
         const tutorRes = await fetch(`/api/v1/tutor/messages`, {
           credentials: 'same-origin'
         });
         if (tutorRes.ok) {
           const history = await tutorRes.json();
+          // Filter messages for this specific lesson if possible, otherwise show recent
           setMessages(history.slice(-5)); 
         }
         
+        // Record progress event: lesson opened
         await fetch(`/api/v1/progress/events`, {
           method: 'POST',
           credentials: 'same-origin',
@@ -64,6 +87,11 @@ export default function LessonViewPage({ params: paramsPromise }) {
     fetchLessonData();
   }, [courseId, lessonId, router]);
 
+  const currentIndex = flatLessons.findIndex(l => l.id === lessonId);
+  const nextLesson = currentIndex >= 0 && currentIndex < flatLessons.length - 1 ? flatLessons[currentIndex + 1] : null;
+  const prevLesson = currentIndex > 0 ? flatLessons[currentIndex - 1] : null;
+  const displayModuleNumber = currentIndex >= 0 ? currentIndex + 1 : 0;
+
   const handleMarkCompleteAndContinue = async () => {
     if (!currentLesson) return;
     setIsCompleting(true);
@@ -81,7 +109,11 @@ export default function LessonViewPage({ params: paramsPromise }) {
       });
       
       setHasCompletedCurrent(true);
-      router.push(`/dashboard/courses/${courseId}/lesson/${parseInt(lessonId, 10) + 1}`);
+      if (nextLesson) {
+        router.push(`/dashboard/courses/${courseId}/lesson/${nextLesson.id}`);
+      } else {
+        router.push(`/dashboard/courses/${courseId}`);
+      }
     } catch (err) {
       console.error("Error saving progression:", err);
     } finally {
@@ -133,7 +165,7 @@ export default function LessonViewPage({ params: paramsPromise }) {
     );
   }
 
-  const isUrl = currentLesson.notes?.startsWith('http');
+  const isUrl = typeof currentLesson.notes === 'string' && (currentLesson.notes.startsWith('http://') || currentLesson.notes.startsWith('https://'));
   const isDocx = isUrl && currentLesson.notes.toLowerCase().includes('.docx');
   const iframeSrc = isDocx 
     ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(currentLesson.notes)}`
@@ -155,7 +187,7 @@ export default function LessonViewPage({ params: paramsPromise }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <span className="text-[10px] font-mono text-red-400 font-bold bg-red-400/10 border border-red-400/20 px-2.5 py-1 uppercase tracking-wider rounded-sm">
-                Module {parseInt(lessonId, 10) < 10 ? `0${parseInt(lessonId, 10)}` : lessonId}
+                Module {displayModuleNumber < 10 ? `0${displayModuleNumber}` : displayModuleNumber}
               </span>
               <h1 className="text-xl font-bold font-mono text-white uppercase tracking-tight">{currentLesson.title}</h1>
             </div>
@@ -167,9 +199,10 @@ export default function LessonViewPage({ params: paramsPromise }) {
             <iframe src={iframeSrc} className={`w-full h-full border-none opacity-90 ${!isDocx ? 'invert-[0.05] contrast-[1.05]' : ''}`} title="Module Reading Documentation Frame" />
           ) : (
             <div className="w-full h-full p-8 overflow-y-auto font-mono text-sm text-slate-300 leading-relaxed">
-              <div className="max-w-3xl mx-auto whitespace-pre-wrap">
-                {currentLesson.notes}
-              </div>
+              <div 
+                className="max-w-3xl mx-auto whitespace-pre-wrap"
+                dangerouslySetInnerHTML={{ __html: currentLesson.notes }}
+              />
             </div>
           )}
         </div>
@@ -219,8 +252,8 @@ export default function LessonViewPage({ params: paramsPromise }) {
 
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2">
           <button 
-            disabled={parseInt(lessonId, 10) <= 1}
-            onClick={() => router.push(`/dashboard/courses/${courseId}/lesson/${parseInt(lessonId, 10) - 1}`)}
+            disabled={!prevLesson}
+            onClick={() => router.push(`/dashboard/courses/${courseId}/lesson/${prevLesson.id}`)}
             className="w-full sm:w-auto text-[10px] font-mono uppercase tracking-widest px-4 py-2.5 bg-white/[0.02] border border-white/5 rounded-sm hover:border-white/20 disabled:opacity-10 transition-all text-slate-300"
           >
             ← Previous Module
@@ -239,8 +272,8 @@ export default function LessonViewPage({ params: paramsPromise }) {
           </button>
           
           <button 
-            disabled={parseInt(lessonId, 10) >= totalLessons}
-            onClick={() => router.push(`/dashboard/courses/${courseId}/lesson/${parseInt(lessonId, 10) + 1}`)}
+            disabled={!nextLesson}
+            onClick={() => router.push(`/dashboard/courses/${courseId}/lesson/${nextLesson.id}`)}
             className="w-full sm:w-auto text-[10px] font-mono uppercase tracking-widest px-4 py-2.5 bg-white/[0.02] border border-white/5 rounded-sm hover:border-white/20 disabled:opacity-10 transition-all text-slate-300"
           >
             Skip to Next →

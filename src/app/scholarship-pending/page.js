@@ -26,8 +26,13 @@ function ScholarshipPendingContent() {
 
   useEffect(() => {
     if (token) {
+      // Call the Bearilly admissions status endpoint via the same-origin proxy
       fetch(`/api/v1/admissions/scholarship/status?token=${encodeURIComponent(token)}`, {
+        method: 'GET',
         credentials: 'same-origin',
+        headers: {
+          'Accept': 'application/json'
+        }
       })
         .then((res) => {
           if (!res.ok) {

@@ -47,15 +47,25 @@ export default function SignUp() {
       const response = await fetch('/api/v1/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: JSON.stringify({
-          email,
+          email: email.trim().toLowerCase(),
           password,
-          full_name: fullName,
-          invite_code: inviteCode
+          full_name: fullName.trim(),
+          invite_code: inviteCode.trim()
         }),
       });
 
-      if (!response.ok) throw new Error('Registration failed');
+      if (!response.ok) {
+        let errMsg = 'Registration failed';
+        try {
+          const errData = await response.json();
+          errMsg = errData.message || errData.error || errMsg;
+        } catch {
+          // ignore json parse error
+        }
+        throw new Error(errMsg);
+      }
 
       // TODO: Scholarship data (isScholar, scholarshipAmount, currency) is not currently 
       // supported by the Bearilly core registration flow. 

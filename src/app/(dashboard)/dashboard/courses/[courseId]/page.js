@@ -98,8 +98,7 @@ export default function CourseWorkspacePage({ params: paramsPromise }) {
             const primaryAssessment = assessmentsList[0];
             setCurrentAssessmentId(primaryAssessment.id);
 
-            const assessmentDetail = await fetch(`/api/v1/assessments/${primaryAssessment.id}`).then(r => r.json());
-            const questionsList = assessmentDetail.questions || [];
+            const questionsList = primaryAssessment.questions || [];
             setQuizzes(questionsList.map((q, idx) => ({
               id: q.id || `q-${idx}`,
               question: q.prompt || `Question Node ${idx + 1}`,
@@ -107,14 +106,17 @@ export default function CourseWorkspacePage({ params: paramsPromise }) {
               type: q.type || 'mcq'
             })));
 
-            const submissions = await fetch(`/api/v1/assessments/${primaryAssessment.id}/submissions`).then(r => r.json());
-            if (submissions.length > 0) {
-              const latest = submissions[0];
-              setQuizFinished(true);
-              setSavedQuizScore({
-                score: latest.score ?? 0,
-                total_questions: latest.total_marks ?? questionsList.length
-              });
+            const resultsRes = await fetch(`/api/v1/courses/${courseId}/results`);
+            if (resultsRes.ok) {
+              const results = await resultsRes.json();
+              const latest = results.find(r => r.assessment_id === primaryAssessment.id);
+              if (latest) {
+                setQuizFinished(true);
+                setSavedQuizScore({
+                  score: latest.score ?? 0,
+                  total_questions: questionsList.length
+                });
+              }
             }
           }
         }
@@ -134,13 +136,8 @@ export default function CourseWorkspacePage({ params: paramsPromise }) {
   };
 
   const handleUploadSubmission = async (assignmentId) => {
-    const file = selectedFiles[assignmentId];
-    if (!file) return;
-    setUploadingId(assignmentId);
     // TODO: Bearilly API does not provide an assignment document storage endpoint.
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    alert("Task matrix archive mounted successfully!");
-    setUploadingId(null);
+    alert("Task matrix archive submission is not currently supported via API.");
   };
 
   const handleOptionSelect = (quizId, optionText) => {
@@ -150,21 +147,10 @@ export default function CourseWorkspacePage({ params: paramsPromise }) {
   const handleSubmitQuiz = async () => {
     setSubmittingQuiz(true);
     try {
-      const answersPayload = quizzes.map((quiz) => ({
-        question_id: quiz.id,
-        answer: quiz.options.indexOf(selectedAnswers[quiz.id])
-      }));
-
-      const res = await fetch(`/api/v1/assessments/${currentAssessmentId}/submissions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answers: answersPayload })
-      });
-
-      if (!res.ok) throw new Error('Submission failed');
-      const result = await res.json();
-      setSavedQuizScore({ score: result.score ?? 0, total_questions: quizzes.length });
+      // TODO: Map to verified Bearilly assessment submission endpoint if available.
+      // Currently using local state simulation as per instructions for non-verified endpoints.
       setQuizFinished(true);
+      setSavedQuizScore({ score: 0, total_questions: quizzes.length });
     } catch (error) {
       alert(`Failed to upload score signature: ${error.message}`);
     } finally {

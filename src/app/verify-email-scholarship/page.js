@@ -25,15 +25,19 @@ export default function ScholarshipVerifyEmail() {
     const slug = params.get('slug');
 
     if (token && slug) {
+      // Verified Bearilly endpoint: GET /api/v1/admissions/:slug/status
       fetch(`/api/v1/admissions/${encodeURIComponent(slug)}/status?token=${encodeURIComponent(token)}`, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
         credentials: 'same-origin',
       })
-        .then((res) => res.json())
-        .then(() => {
+        .then((res) => {
+          if (!res.ok) throw new Error('Verification failed');
+          return res.json();
+        })
+        .then((data) => {
           // Application tracking status verified via Bearilly proxy
         })
         .catch((err) => {

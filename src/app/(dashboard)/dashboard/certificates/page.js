@@ -12,10 +12,19 @@ export default function CertificatesPage() {
     const fetchCertificates = async () => {
       setLoading(true);
       try {
-        // TODO: There is currently no verified Bearilly endpoint to list earned student certificates.
-        // Public verification is available via GET /api/v1/certificates/verify/:code.
-        // Retaining safe stub until student certificate listing endpoint is supported by Bearilly API.
-        setEarnedCertificates([]);
+        // Fetch current user identity via proxy to determine student ID
+        const meRes = await fetch('/api/v1/auth/me', { credentials: 'same-origin' });
+        if (!meRes.ok) throw new Error('Not authenticated');
+        const me = await meRes.json();
+        
+        // Fetch certificates for the authenticated student
+        const certsRes = await fetch(`/api/v1/students/${encodeURIComponent(me.id)}/certificates`, {
+          credentials: 'same-origin',
+        });
+        if (certsRes.ok) {
+          const data = await certsRes.json();
+          setEarnedCertificates(data.certificates || []);
+        }
       } catch (err) {
         console.error("Error loading certificates registry:", err.message);
       } finally {
@@ -90,15 +99,13 @@ export default function CertificatesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
           {earnedCertificates.map((cert) => {
-            const cardBgImage = cert.certificateimage_url || cert.image_url || 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?q=80&w=600&auto=format&fit=crop';
-            const courseTitle = cert.courses?.title || cert.course?.title || cert.title || 'Unknown Curriculum Node';
-            const courseCategory = cert.courses?.category || cert.course?.category || cert.category || 'General';
-            const courseId = cert.course_id || cert.course?.id || cert.id;
-            const certUrl = cert.certificate_url || (cert.code ? `/dashboard/certificates/view?code=${encodeURIComponent(cert.code)}` : `/dashboard/certificates/view?id=${cert.id}`);
+            const cardBgImage = 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?q=80&w=600&auto=format&fit=crop';
+            const courseTitle = cert.course_name || 'Completed Course';
+            const certUrl = `/dashboard/certificates/view?code=${encodeURIComponent(cert.verification_code)}`;
 
             return (
               <div 
-                key={cert.id} 
+                key={cert.verification_code} 
                 className="relative border border-white/10 rounded-sm p-5 flex flex-col justify-between space-y-4 hover:border-emerald-500/40 transition-all overflow-hidden group min-h-[200px] shadow-2xl"
               >
                 <div 
@@ -110,7 +117,7 @@ export default function CertificatesPage() {
                 <div className="space-y-1.5 flex-1 relative z-10">
                   <div className="flex justify-between items-start">
                     <span className="text-[9px] text-white font-bold bg-black/80 px-1.5 py-0.5 rounded-sm uppercase tracking-wider border border-white/10">
-                      ID: {courseId}
+                      CODE: {cert.verification_code}
                     </span>
                     <span className="text-[10px] text-emerald-400 font-bold uppercase bg-black/80 px-2 py-0.5 rounded-sm border border-emerald-500/30">
                       ✓ Verified
@@ -123,7 +130,7 @@ export default function CertificatesPage() {
                         {courseTitle}
                       </h4>
                       <p className="text-[10px] text-slate-200 uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] font-bold">
-                        Field: {courseCategory}
+                        Grade: {cert.grade} · Score: {cert.score}%
                       </p>
                     </div>
 
@@ -152,7 +159,6 @@ export default function CertificatesPage() {
         </div>
       )}
 
-      {/* Verification Playground */}
       <div className="border border-white/10 bg-black/60 backdrop-blur-md p-6 rounded-sm relative z-10 space-y-4">
         <div>
           <span className="text-[9px] uppercase tracking-widest px-2 py-0.5 bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-bold">
@@ -193,7 +199,7 @@ export default function CertificatesPage() {
               <span className="font-bold uppercase tracking-wider">
                 {verifyResult.valid ? '✓ Certificate Authenticated' : '✕ Verification Failed'}
               </span>
-              {verifyResult.valid && (verifyResult.code || verifyCode) && (
+              {verifyResult.valid && (
                 <span className="text-[9px] bg-black/60 px-1.5 py-0.5 rounded-sm border border-emerald-500/30">
                   CODE: {verifyResult.code || verifyCode.trim()}
                 </span>
@@ -201,13 +207,9 @@ export default function CertificatesPage() {
             </div>
             {verifyResult.valid ? (
               <div className="pt-2 text-slate-300 text-[11px] space-y-1 font-sans">
-                <p><span className="text-white font-mono uppercase font-bold text-[10px]">Course:</span> {verifyResult.course_title || verifyResult.course?.title || verifyResult.title || 'Course Completed'}</p>
-                {(verifyResult.student_name || verifyResult.recipient_name || verifyResult.full_name) && (
-                  <p><span className="text-white font-mono uppercase font-bold text-[10px]">Recipient:</span> {verifyResult.student_name || verifyResult.recipient_name || verifyResult.full_name}</p>
-                )}
-                {(verifyResult.issued_at || verifyResult.created_at) && (
-                  <p><span className="text-white font-mono uppercase font-bold text-[10px]">Issued:</span> {new Date(verifyResult.issued_at || verifyResult.created_at).toLocaleDateString()}</p>
-                )}
+                <p><span className="text-white font-mono uppercase font-bold text-[10px]">Course:</span> {verifyResult.course_title || 'Course Completed'}</p>
+                <p><span className="text-white font-mono uppercase font-bold text-[10px]">Recipient:</span> {verifyResult.student_name || 'Student'}</p>
+                <p><span className="text-white font-mono uppercase font-bold text-[10px]">Issued:</span> {new Date(verifyResult.issued_at).toLocaleDateString()}</p>
                 <div className="pt-2">
                   <a
                     href={`/dashboard/certificates/view?code=${encodeURIComponent(verifyResult.code || verifyCode.trim())}`}

@@ -8,11 +8,12 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
+    // Proxy request to Bearilly via internal API route to maintain security contract
     const bearillyResponse = await fetch(`${process.env.BEARILLY_URL}/api/v1/students/${scholarId}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.BEARILLY_API_KEY}`
+        'x-bearilly-key': process.env.BEARILLY_API_KEY
       },
       body: JSON.stringify({
         status: action === 'verified' ? 'active' : 'inactive'
