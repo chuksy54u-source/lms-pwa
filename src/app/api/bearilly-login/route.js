@@ -23,6 +23,7 @@ const BEARILLY_API_KEY = process.env.BEARILLY_API_KEY || '';
 const COOKIE_NAME = 'bearilly_session';
 const SCHOOL_COOKIE_NAME = 'bearilly_school_id';
 const COOKIE_MAX_AGE = 14 * 60; // 14 minutes — safely within the 15-min token lifetime
+const normalizeHostname = (hostname) => hostname.toLowerCase().replace(/^www\./, '');
 
 export async function POST(request) {
   try {
@@ -38,6 +39,17 @@ export async function POST(request) {
     const identity = await identityResponse.json();
     if (!identity.email || !identity.email_confirmed_at) return NextResponse.json({ error: 'The school account must have a verified email' }, { status: 403 });
     if (!BEARILLY_URL || !BEARILLY_API_KEY) return NextResponse.json({ error: 'Bearilly server configuration is missing' }, { status: 500 });
+    let bearillyHostname;
+    try {
+      bearillyHostname = new URL(BEARILLY_URL).hostname;
+    } catch {
+      console.error('[bearilly-login] BEARILLY_URL must be an absolute URL.');
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
+    if (normalizeHostname(bearillyHostname) === normalizeHostname(new URL(request.url).hostname)) {
+      console.error('[bearilly-login] BEARILLY_URL points to this website, not the Bearilly API.');
+      return NextResponse.json({ error: 'BEARILLY_URL must use the Bearilly school API URL supplied by Connect, not this website domain' }, { status: 500 });
+    }
     const upstream = await fetch(`${BEARILLY_URL}/api/v1/integration/session`, { method: 'POST', headers: { 'x-bearilly-key': BEARILLY_API_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ email: identity.email }) });
     const result = await upstream.json();
     if (!upstream.ok || !result?.data?.token || !result.data.school_id) return NextResponse.json({ error: result?.error?.message || 'Could not connect this account to Bearilly' }, { status: upstream.status || 502 });

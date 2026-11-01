@@ -12,6 +12,7 @@ import { NextResponse } from 'next/server';
  */
 
 const BEARILLY_URL = process.env.BEARILLY_URL || '';
+const normalizeHostname = (hostname) => hostname.toLowerCase().replace(/^www\./, '');
 
 function isAllowed(pathname) {
   return pathname.startsWith('/api/v1/') &&
@@ -28,7 +29,18 @@ async function proxyRequest(request, params) {
     console.error('[bearilly-proxy] BEARILLY_URL env var is not set.');
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
   }
-  const url = new URL(pathname, BEARILLY_URL);
+  let bearillyBase;
+  try {
+    bearillyBase = new URL(BEARILLY_URL);
+  } catch {
+    console.error('[bearilly-proxy] BEARILLY_URL must be an absolute URL.');
+    return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+  }
+  if (normalizeHostname(bearillyBase.hostname) === normalizeHostname(request.nextUrl.hostname)) {
+    console.error('[bearilly-proxy] BEARILLY_URL points to this website, not the Bearilly API.');
+    return NextResponse.json({ error: 'BEARILLY_URL must use the Bearilly school API URL supplied by Connect, not this website domain' }, { status: 500 });
+  }
+  const url = new URL(pathname, bearillyBase);
   for (const [key, value] of request.nextUrl.searchParams) url.searchParams.set(key, value);
   const publicTenant = request.method === 'GET' && pathname === '/api/v1/tenant';
   const publicRegistration = request.method === 'POST' && pathname === '/api/v1/auth/register';
