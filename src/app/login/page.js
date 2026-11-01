@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createBrowserClient } from '../../lib/supabase/browser';
 
 export default function Login() {
   const router = useRouter();
@@ -33,21 +32,12 @@ export default function Login() {
     setErrorMessage('');
 
     try {
-      const supabase = createBrowserClient();
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-      if (authError) throw authError;
-      const accessToken = authData.session?.access_token;
-      if (!accessToken) throw new Error('School sign-in did not return a session. Please try again.');
-
       const bridgeRes = await fetch('/api/bearilly-login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
         },
+        body: JSON.stringify({ email: email.trim(), password }),
         credentials: 'same-origin',
       });
 

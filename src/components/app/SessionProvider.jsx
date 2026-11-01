@@ -1,8 +1,7 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { apiGet, apiPost, apiPatch, usingMocks, MOCK_ROLE_KEY } from '../../lib/api/client.js';
-import { createBrowserClient } from '../../lib/supabase/browser.js';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { apiGet, apiPost, usingMocks, MOCK_ROLE_KEY } from '../../lib/api/client.js';
 import { clearApiCache } from '../../lib/app/useApi.js';
 
 // Who is signed in?  const { status, me, signIn, signOut } = useSession();
@@ -13,16 +12,6 @@ const SessionContext = createContext(null);
 
 export const HOME_FOR = { student: '/home', teacher: '/teacher', school_admin: '/admin', platform_admin: '/platform' };
 export const homeFor = (role) => HOME_FOR[role] || '/home';
-
-function supabaseOrNull() {
-  if (usingMocks()) return null;
-  try {
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) return null;
-    return createBrowserClient();
-  } catch (e) {
-    return null;
-  }
-}
 
 function setMockRole(role) {
   try {
@@ -41,50 +30,33 @@ export function mockRoleForEmail(email) {
   return 'student';
 }
 
-const authError = (error) => Object.assign(new Error(error.message || 'Sign-in failed.'), { code: error.code || error.name || 'AUTH', status: error.status });
-
 export default function SessionProvider({ children }) {
   const [state, setState] = useState({ status: 'loading', me: null, mustChangePassword: false, error: null });
-  const sbRef = useRef(null);
-  const refreshErrorRef = useRef(null);
 
   const refresh = useCallback(async () => {
     try {
       const me = await apiGet('/api/v1/auth/me');
-      refreshErrorRef.current = null;
-      let mustChange = false;
-      const sb = sbRef.current;
-      if (sb) {
-        const { data } = await sb.auth.getUser();
-        mustChange = Boolean(data && data.user && data.user.user_metadata && data.user.user_metadata.must_change_password);
-      }
-      setState({ status: 'in', me, mustChangePassword: mustChange, error: null });
+      setState({ status: 'in', me, mustChangePassword: false, error: null });
       return me;
     } catch (error) {
-      refreshErrorRef.current = error.status === 401 ? null : error;
       setState({ status: 'out', me: null, mustChangePassword: false, error: error.status === 401 ? null : error });
       return null;
     }
   }, []);
 
   useEffect(() => {
-    const sb = supabaseOrNull();
-    sbRef.current = sb;
-    if (!sb) {
-      if (usingMocks()) refresh();
-      else setState({ status: 'out', me: null, mustChangePassword: false, error: null });
-      return undefined;
-    }
-    sb.auth.getSession().then(({ data }) => {
-      if (data.session) refresh();
-      else setState({ status: 'out', me: null, mustChangePassword: false, error: null });
-    });
-    const { data } = sb.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT' || !session) setState({ status: 'out', me: null, mustChangePassword: false, error: null });
-      else if (event === 'SIGNED_IN' || event === 'USER_UPDATED') refresh();
-    });
-    return () => data.subscription.unsubscribe();
-  }, [refresh]);
+    let active = true;
+    apiGet('/api/v1/auth/me')
+      .then((me) => {
+        if (active) setState({ status: 'in', me, mustChangePassword: false, error: null });
+      })
+      .catch((error) => {
+        if (active) setState({ status: 'out', me: null, mustChangePassword: false, error: error.status === 401 ? null : error });
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const signIn = useCallback(
     async (email, password) => {
@@ -95,15 +67,16 @@ export default function SessionProvider({ children }) {
         if (!me) throw Object.assign(new Error('Sign-in failed.'), { code: 'AUTH' });
         return me;
       }
-      const sb = sbRef.current;
-      if (!sb) throw Object.assign(new Error('Sign-in is not set up yet: the Supabase settings are missing.'), { code: 'NOT_CONFIGURED' });
-      const { error } = await sb.auth.signInWithPassword({ email: email.trim(), password });
-      if (error) throw authError(error);
-      refreshErrorRef.current = null;
+      const response = await fetch('/api/bearilly-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw Object.assign(new Error(result.error || 'Email or password is incorrect.'), { code: 'AUTH', status: response.status });
       const me = await refresh();
       if (!me) {
-        const current = refreshErrorRef.current;
-        if (current) throw current;
         throw Object.assign(new Error('Your account is not linked to a school yet. Ask your school admin.'), { code: 'NO_ACTIVE_MEMBERSHIP' });
       }
       return me;
@@ -114,7 +87,10 @@ export default function SessionProvider({ children }) {
   const signOut = useCallback(async () => {
     clearApiCache();
     if (usingMocks()) setMockRole(null);
-    else if (sbRef.current) await sbRef.current.auth.signOut().catch(() => {});
+    else {
+      const response = await fetch('/api/bearilly-login', { method: 'DELETE', credentials: 'same-origin' });
+      if (!response.ok) throw new Error('Could not sign out. Please try again.');
+    }
     try {
       window.sessionStorage.removeItem('bearilly:mood');
     } catch (e) {
@@ -134,33 +110,18 @@ export default function SessionProvider({ children }) {
     [signIn],
   );
 
-  const requestPasswordReset = useCallback(async (email) => {
+  const requestPasswordReset = useCallback(async () => {
     if (usingMocks()) return true;
-    const sb = sbRef.current;
-    if (!sb) throw Object.assign(new Error('Password reset is not set up yet.'), { code: 'NOT_CONFIGURED' });
-    const { error } = await sb.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${window.location.origin}/reset-password` });
-    if (error) throw authError(error);
-    return true;
+    throw Object.assign(new Error('Password reset is not configured for this connected Bearilly website yet.'), { code: 'NOT_CONFIGURED' });
   }, []);
 
   const updatePassword = useCallback(async (password) => {
     if (usingMocks()) return true;
-    const sb = sbRef.current;
-    if (!sb) throw Object.assign(new Error('Not signed in.'), { code: 'UNAUTHORIZED' });
-    const { error } = await sb.auth.updateUser({ password, data: { must_change_password: false } });
-    if (error) throw authError(error);
-    if (state.me?.role === 'student') {
-      await apiPatch(`/api/v1/students/${encodeURIComponent(state.me.id)}/onboarding`, { password_changed: true });
-    }
-    setState((s) => ({ ...s, mustChangePassword: false }));
-    return true;
-  }, [state.me]);
+    throw Object.assign(new Error('Password changes are not configured for this connected Bearilly website yet.'), { code: 'NOT_CONFIGURED' });
+  }, []);
 
   const signInWithGoogle = useCallback(async () => {
-    const sb = sbRef.current;
-    if (!sb) throw Object.assign(new Error('Google sign-in is not set up yet.'), { code: 'NOT_CONFIGURED' });
-    const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}/` } });
-    if (error) throw authError(error);
+    throw Object.assign(new Error('Google sign-in is not configured for this connected Bearilly website yet.'), { code: 'NOT_CONFIGURED' });
   }, []);
 
   // Mock mode only: jump between roles to review every screen.
@@ -175,7 +136,7 @@ export default function SessionProvider({ children }) {
   );
 
   const value = useMemo(
-    () => ({ ...state, role: state.me ? state.me.role : null, refresh, signIn, signOut, register, requestPasswordReset, updatePassword, signInWithGoogle, switchMockRole, supabase: () => sbRef.current }),
+    () => ({ ...state, role: state.me ? state.me.role : null, refresh, signIn, signOut, register, requestPasswordReset, updatePassword, signInWithGoogle, switchMockRole }),
     [state, refresh, signIn, signOut, register, requestPasswordReset, updatePassword, signInWithGoogle, switchMockRole],
   );
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
