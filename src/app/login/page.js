@@ -51,12 +51,18 @@ export default function Login() {
         credentials: 'same-origin',
         headers: { 'Accept': 'application/json' },
       });
+      const sessionResult = await meRes.json().catch(() => null);
 
       if (!meRes.ok) {
-        throw new Error('Failed to retrieve user session.');
+        const apiError = sessionResult?.error;
+        throw new Error(
+          apiError?.message
+            ? `Session check failed (${apiError.code || meRes.status}): ${apiError.message}`
+            : `Failed to retrieve user session (HTTP ${meRes.status}).`,
+        );
       }
 
-      const userData = await meRes.json();
+      const userData = sessionResult;
       const me = userData.data || userData;
       const roles = me.roles || (me.role ? [me.role] : []);
 
