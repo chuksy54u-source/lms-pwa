@@ -79,6 +79,7 @@ async function proxyRequest(request, params) {
     if (!sessionToken || !schoolId) return NextResponse.json({ error: 'Sign in with your school account first' }, { status: 401 });
     headers.set('x-bearilly-session', sessionToken);
     headers.set('x-bearilly-origin-school', schoolId);
+    headers.set('x-bearilly-host', request.nextUrl.hostname);
   }
   const ct = request.headers.get('content-type');
   if (ct) headers.set('content-type', ct);
