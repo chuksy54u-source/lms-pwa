@@ -1,24 +1,31 @@
-import axios from 'axios';
-
 /**
  * Bearilly Migration: Replaces Supabase client with a proxy-based Bearilly API client.
  * All requests are routed through the same-origin /api/v1/ proxy.
  */
 
-const apiClient = axios.create({
-  baseURL: '/api/v1',
-  withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json',
+const apiClient = {
+  get: async (url) => {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Request failed');
+    return { data: await res.json() };
   },
-});
+  post: async (url, data) => {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Request failed');
+    return { data: await res.json() };
+  },
+};
 
 export const createClient = () => {
   return {
     auth: {
       getUser: async () => {
         try {
-          const response = await apiClient.get('/auth/me');
+          const response = await apiClient.get('/api/v1/auth/me');
           return { data: { user: response.data.data }, error: null };
         } catch (err) {
           return { data: { user: null }, error: err };
@@ -26,8 +33,11 @@ export const createClient = () => {
       },
       signInWithPassword: async ({ email, password }) => {
         try {
-          // Redirects to server-side login route as per contract
-          await axios.post('/api/bearilly-login', { email, password });
+          await fetch('/api/bearilly-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
+          });
           return { data: { user: true }, error: null };
         } catch (err) {
           return { data: null, error: err };
@@ -35,7 +45,7 @@ export const createClient = () => {
       },
       signUp: async ({ email, password, options }) => {
         try {
-          const response = await apiClient.post('/auth/register', {
+          const response = await apiClient.post('/api/v1/auth/register', {
             email,
             password,
             full_name: options?.data?.full_name,
@@ -47,7 +57,6 @@ export const createClient = () => {
         }
       },
     },
-    // Stub for legacy database calls; logic must be migrated to Bearilly API endpoints
     from: (table) => ({
       select: () => ({
         eq: () => ({
