@@ -2,18 +2,17 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/utils/supabase/client'; 
 
 export default function SignUp() {
   const router = useRouter();
-  const supabase = createClient();
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('student'); // 'student' or 'instructor'
+  const [inviteCode, setInviteCode] = useState('');
+  const [role, setRole] = useState('student');
   
-  // Scholarship States
+  // Scholarship States (Stub: Bearilly handles financial aid via internal dashboard)
   const [isScholar, setIsScholar] = useState(false);
   const [scholarshipAmount, setScholarshipAmount] = useState('');
   const [currency, setCurrency] = useState('USD');
@@ -39,40 +38,30 @@ export default function SignUp() {
     e.preventDefault();
     setLoading(true);
 
-    const isScholarStudent = role === 'student' && isScholar;
-    
-    // Redirect URL embedded inside the email confirmation link
-    const redirectUrl = isScholarStudent
-      ? `${window.location.origin}/scholarship-pending`
-      : `${window.location.origin}/welcome`;
-
-    const { data, error } = await supabase.auth.signUp({
-      email: email,
-      password: password,
-      options: {
-        data: { 
-          email: email, // Explicitly pass email to metadata
+    try {
+      // Bearilly student registration via proxy
+      const res = await fetch('/api/v1/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          invite_code: inviteCode,
           full_name: fullName,
-          role: role,
-          is_instructor: role === 'instructor',
-          is_scholar: isScholarStudent,
-          scholarship_amount: isScholarStudent ? parseFloat(scholarshipAmount) || 0 : null,
-          currency: isScholarStudent ? currency : null,
-        }, 
-        emailRedirectTo: redirectUrl,
-      },
-    });
+          email: email,
+          password: password
+        })
+      });
 
-    setLoading(false);
-
-    if (error) {
-      alert(error.message);
-    } else {
-      if (isScholarStudent) {
-        router.push('/verify-email-scholarship');
-      } else {
-        router.push('/verify-email');
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Registration failed');
       }
+
+      // TODO: Handle scholarship application flow via Bearilly support ticket or admin portal
+      router.push('/login');
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -119,40 +108,23 @@ export default function SignUp() {
           </div>
           <h2 className="text-sm font-bold uppercase tracking-widest pt-2 text-white">Registration Guidance</h2>
           <p className="text-xs text-slate-300 leading-relaxed">
-            Create your account by selecting your respective tracking role, providing your credentials and parsing system configurations.
+            Create your account by providing your credentials and school invite code.
           </p>
         </div>
 
-        {/* ROLE SELECTOR BUTTON GROUP */}
-        <div className="space-y-1 font-mono">
-          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Account Pipeline Type</label>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => { setRole('student'); }}
-              className={`py-2.5 text-xs font-bold uppercase tracking-wider transition-all border ${
-                role === 'student' 
-                  ? 'bg-white text-black border-white' 
-                  : 'bg-white/5 text-slate-400 border-white/10 hover:border-white/20'
-              }`}
-            >
-              Student Portal
-            </button>
-            <button
-              type="button"
-              onClick={() => { setRole('instructor'); setIsScholar(false); }}
-              className={`py-2.5 text-xs font-bold uppercase tracking-wider transition-all border ${
-                role === 'instructor' 
-                  ? 'bg-red-600 text-white border-red-600 shadow-lg shadow-red-600/20' 
-                  : 'bg-white/5 text-slate-400 border-white/10 hover:border-white/20'
-              }`}
-            >
-              Instructor Hub
-            </button>
-          </div>
-        </div>
-
         <form className="space-y-4" onSubmit={handleSignUpSubmit}>
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Invite Code</label>
+            <input 
+              required
+              type="text" 
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value)}
+              placeholder="e.g. ORN-7KQ2"
+              className="w-full rounded-none border border-white/10 bg-white/5 px-4 py-3 text-xs text-white placeholder-slate-500 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 transition-all"
+            />
+          </div>
+
           <div className="space-y-1">
             <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Full Name</label>
             <input 
@@ -189,69 +161,12 @@ export default function SignUp() {
             />
           </div>
 
-          {/* SCHOLARSHIP SECTION FOR STUDENTS */}
-          {role === 'student' && (
-            <div className="space-y-3 pt-2 border-t border-white/10">
-              <div className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  id="isScholarCheckbox"
-                  checked={isScholar}
-                  onChange={(e) => setIsScholar(e.target.checked)}
-                  className="w-4 h-4 rounded-none accent-red-600 bg-white/5 border-white/20 focus:ring-0"
-                />
-                <label htmlFor="isScholarCheckbox" className="text-xs font-semibold text-slate-200 cursor-pointer select-none">
-                  Are you a scholarship student?
-                </label>
-              </div>
-
-              {isScholar && (
-                <div className="p-3 bg-white/5 border border-white/10 space-y-3 animate-fadeIn">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-red-400 block">
-                    Scholarship Details
-                  </span>
-                  
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="col-span-1 space-y-1">
-                      <label className="text-[9px] font-bold uppercase text-slate-400">Currency</label>
-                      <select
-                        value={currency}
-                        onChange={(e) => setCurrency(e.target.value)}
-                        className="w-full rounded-none border border-white/10 bg-slate-900 px-2 py-2.5 text-xs text-white focus:border-red-500 focus:outline-none"
-                      >
-                        <option value="USD">USD ($)</option>
-                        <option value="EUR">EUR (€)</option>
-                        <option value="GBP">GBP (£)</option>
-                        <option value="NGN">NGN (₦)</option>
-                        <option value="CAD">CAD ($)</option>
-                      </select>
-                    </div>
-
-                    <div className="col-span-2 space-y-1">
-                      <label className="text-[9px] font-bold uppercase text-slate-400">Award Amount</label>
-                      <input
-                        required={isScholar}
-                        type="number"
-                        min="0"
-                        step="any"
-                        value={scholarshipAmount}
-                        onChange={(e) => setScholarshipAmount(e.target.value)}
-                        placeholder="5000"
-                        className="w-full rounded-none border border-white/10 bg-white/5 px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:border-red-500 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
           <button 
             type="submit" 
             disabled={loading}
             className="w-full rounded-none bg-red-600 py-3.5 text-xs font-bold uppercase tracking-widest text-white hover:bg-white hover:text-black transition-all duration-300 shadow-lg shadow-red-600/10 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Creating Account...' : `Get Started As ${role}`}
+            {loading ? 'Creating Account...' : 'Create Account'}
           </button>
         </form>
 

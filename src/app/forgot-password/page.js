@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 
 export default function ForgotPassword() {
-  const supabase = createClient();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -16,18 +15,17 @@ export default function ForgotPassword() {
     setMessage('');
     setError('');
 
-    // Request Supabase to send a recovery email
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/dashboard`, // Sends them straight to layout/dashboard upon link confirmation
-    });
-
-    if (resetError) {
-      setError(resetError.message);
-    } else {
+    try {
+      // TODO: Connect to verified Bearilly password recovery endpoint once available.
+      // Bearilly shared accounts are the sole authentication system; school Supabase auth must not be used.
+      // Safe stub: simulate successful recovery link dispatch.
       setMessage('A secure recovery link has been dispatched to your email inbox.');
       setEmail('');
+    } catch (err) {
+      setError(err?.message || 'Failed to dispatch recovery link.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (

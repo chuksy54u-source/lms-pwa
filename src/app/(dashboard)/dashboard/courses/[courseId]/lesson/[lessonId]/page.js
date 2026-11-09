@@ -2,12 +2,29 @@
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/utils/supabase/client';
+
+async function apiGet(url) {
+  const res = await fetch(url, { credentials: 'same-origin' });
+  if (!res.ok) return null;
+  const json = await res.json();
+  return json.data !== undefined ? json.data : json;
+}
+
+async function apiPost(url, body) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'same-origin',
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error('API request failed');
+  const json = await res.json();
+  return json.data !== undefined ? json.data : json;
+}
 
 export default function LessonViewPage({ params: paramsPromise }) {
   const params = use(paramsPromise);
   const { courseId, lessonId } = params;
-  const supabase = createClient();
   const router = useRouter();
 
   const [course, setCourse] = useState(null);
@@ -21,76 +38,63 @@ export default function LessonViewPage({ params: paramsPromise }) {
     const fetchLessonNotesAndProgress = async () => {
       setLoading(true);
 
-      const { data: { user } } = await supabase.auth.getUser();
+      try {
+        const courseData = await apiGet(`/api/v1/courses/${encodeURIComponent(courseId)}`);
+        if (courseData) setCourse(courseData);
 
-      const { data: courseData } = await supabase
-        .from('courses')
-        .select('*')
-        .eq('id', courseId)
-        .single();
-
-      const { data: modsData } = await supabase
-        .from('modules')
-        .select('*')
-        .eq('course_id', courseId)
-        .order('sort_order', { ascending: true });
-
-      if (courseData) setCourse(courseData);
-      
-      if (modsData) {
-        setTotalModules(modsData.length);
-        const targetIndex = parseInt(lessonId, 10) - 1;
-        if (modsData[targetIndex]) {
-          const targetModule = modsData[targetIndex];
-          setCurrentModule(targetModule);
-
-          if (user) {
-            const { data: progressCheck } = await supabase
-              .from('user_progress')
-              .select('id')
-              .eq('user_id', user.id)
-              .eq('module_id', targetModule.id)
-              .maybeSingle();
-
-            setHasCompletedCurrent(!!progressCheck);
-          }
+        const unitsData = await apiGet(`/api/v1/courses/${encodeURIComponent(courseId)}/units`);
+        let flatLessons = [];
+        if (Array.isArray(unitsData)) {
+          flatLessons = unitsData.flatMap((u) => u.lessons || []);
         }
-      }
 
-      setLoading(false);
+        setTotalModules(flatLessons.length || 1);
+
+        const targetIndex = parseInt(lessonId, 10) - 1;
+        let targetModule = flatLessons[targetIndex] || (flatLessons.length > 0 ? flatLessons[0] : null);
+
+        if (!targetModule && flatLessons.length > 0) {
+          targetModule = flatLessons.find((l) => l.id === lessonId);
+        }
+
+        const activeLessonId = targetModule?.id || lessonId;
+        const fullLesson = await apiGet(`/api/v1/lessons/${encodeURIComponent(activeLessonId)}`);
+
+        const activeModule = fullLesson || targetModule || { id: activeLessonId, title: `Module ${lessonId}` };
+        setCurrentModule(activeModule);
+
+        if (activeModule?.id) {
+          apiPost('/api/v1/progress/events', {
+            kind: 'lesson_opened',
+            lesson_id: activeModule.id,
+          }).catch(() => {});
+        }
+      } catch (err) {
+        console.error('Error fetching lesson data:', err);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchLessonNotesAndProgress();
-  }, [courseId, lessonId, supabase]);
+  }, [courseId, lessonId]);
 
   const handleMarkCompleteAndContinue = async () => {
     setIsCompleting(true);
     try {
-      const { data: { user }, authErr } = await supabase.auth.getUser();
-      if (authErr || !user) {
-        router.push('/login');
-        return;
+      if (currentModule?.id) {
+        await apiPost('/api/v1/progress/events', {
+          kind: 'lesson_completed',
+          lesson_id: currentModule.id,
+        }).catch(() => {});
       }
 
-      // Step A: Save Module progression milestone
-      if (!hasCompletedCurrent) {
-        await supabase
-          .from('user_progress')
-          .upsert({
-            user_id: user.id,
-            course_id: courseId,
-            module_id: currentModule.id
-          }, { onConflict: 'user_id,module_id' });
-        
-        setHasCompletedCurrent(true);
-      }
+      setHasCompletedCurrent(true);
 
-      // Step B: Direct Navigation Flow based on completion index
       const nextIndex = parseInt(lessonId, 10) + 1;
       if (nextIndex <= totalModules) {
         router.push(`/dashboard/courses/${courseId}/lesson/${nextIndex}`);
       } else {
-        // Redirect to the course dashboard route with completed status flags
         router.push(`/dashboard/courses/${courseId}?status=completed`);
       }
     } catch (err) {
@@ -102,7 +106,7 @@ export default function LessonViewPage({ params: paramsPromise }) {
 
   if (loading) return <div className="p-8 text-xs text-slate-400 font-mono min-h-screen bg-[#07070a]">Streaming module document parameters...</div>;
 
-  const activeDocumentUrl = currentModule?.module_notes_url || course?.notes_url;
+  const activeDocumentUrl = currentModule?.module_notes_url || currentModule?.notes_url || course?.notes_url || (currentModule?.notes ? 'data:text/html;charset=utf-8,' + encodeURIComponent(`<!DOCTYPE html><html><head><style>body{font-family:sans-serif;color:#e2e8f0;background-color:#111116;padding:2rem;line-height:1.6;}</style></head><body>${currentModule.notes}</body></html>`) : null);
 
   if (!currentModule || !activeDocumentUrl) {
     return (
@@ -113,10 +117,12 @@ export default function LessonViewPage({ params: paramsPromise }) {
     );
   }
 
-  const isDocx = activeDocumentUrl.toLowerCase().includes('.docx');
+  const isDocx = typeof activeDocumentUrl === 'string' && activeDocumentUrl.toLowerCase().includes('.docx');
   const iframeSrc = isDocx 
     ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(activeDocumentUrl)}`
-    : `${activeDocumentUrl}#page=${currentModule.start_page || 1}&toolbar=0&navpanes=0`;
+    : (activeDocumentUrl.startsWith('data:')
+        ? activeDocumentUrl
+        : `${activeDocumentUrl}#page=${currentModule.start_page || 1}&toolbar=0&navpanes=0`);
 
   return (
     <div className="min-h-screen bg-[#07070a] text-slate-100 p-6 md:p-12">

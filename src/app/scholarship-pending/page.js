@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
+// TODO: Scholarship verification feature has no verified Bearilly endpoint. Retaining pending status UI.
 export default function ScholarshipPending() {
   const backgroundSlideshow = [
     'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1600&auto=format&fit=crop&q=80',

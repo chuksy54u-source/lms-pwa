@@ -2,10 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/utils/supabase/client';
 
 export default function InstructorDashboard() {
-  const supabase = createClient();
   const router = useRouter();
   
   const [activeTab, setActiveTab] = useState('grading');
@@ -48,28 +46,17 @@ export default function InstructorDashboard() {
   const checkSecurityAndLoad = async () => {
     setLoading(true);
     try {
-      const { data: { user }, error: authErr } = await supabase.auth.getUser();
-      if (authErr || !user) {
-        setIsAuthorized(false);
-        setLoading(false);
-        return;
-      }
-
-      const { data: profile, error: profErr } = await supabase
-        .from('profiles')
-        .select('is_instructor')
-        .eq('id', user.id)
-        .single();
-
-      if (profErr || !profile?.is_instructor) {
+      const res = await fetch('/api/v1/auth/me', { credentials: 'same-origin' });
+      const { data: user } = await res.json();
+      
+      if (!user || user.role !== 'teacher') {
         setIsAuthorized(false);
         setLoading(false);
         return;
       }
 
       setIsAuthorized(true);
-      await fetchInstructorTelemetry();
-
+      await fetchInstructorTelemetry(user.id);
     } catch (err) {
       console.error("Security interception error:", err.message);
       setIsAuthorized(false);
@@ -78,253 +65,52 @@ export default function InstructorDashboard() {
     }
   };
 
-  const fetchInstructorTelemetry = async () => {
+  const fetchInstructorTelemetry = async (teacherId) => {
     try {
-      const { data: uploadData, error: uploadErr } = await supabase
-        .from('assignment_uploads')
-        .select('id, user_id, full_name, assignment_name, course_id, document_url, grade, status, created_at')
-        .order('created_at', { ascending: false });
-
-      if (uploadErr) throw uploadErr;
-      setUploads(uploadData || []);
-
-      const { data: courseData, error: courseErr } = await supabase
-        .from('courses')
-        .select('id, title');
-
-      if (courseErr) throw courseErr;
-      setCourses(courseData || []);
-      if (courseData?.length > 0) setSelectedCourse(courseData[0].id);
-
+      const res = await fetch(`/api/v1/teachers/${encodeURIComponent(teacherId)}/dashboard`, { credentials: 'same-origin' });
+      const { data } = await res.json();
+      
+      // TODO: Map Bearilly dashboard response to local state
+      // setUploads(data.pending_submissions || []);
+      // setCourses(data.courses || []);
+      // if (data.courses?.length > 0) setSelectedCourse(data.courses[0].id);
     } catch (err) {
       alert(`Telemetry sync failure: ${err.message}`);
     }
   };
 
   const handleCommitGrade = async (uploadId) => {
-    const scoreValue = gradesInput[uploadId];
-    if (!scoreValue) {
-      alert("Input a valid score metric before committing data updates.");
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('assignment_uploads')
-        .update({ grade: parseInt(scoreValue, 10), status: 'Graded' })
-        .eq('id', uploadId);
-
-      if (error) throw error;
-      alert("Grade entry updated successfully!");
-      fetchInstructorTelemetry(); 
-    } catch (err) {
-      alert(`Database write exception: ${err.message}`);
-    }
+    // TODO: Implement via Bearilly API (e.g., PATCH /api/v1/submissions/:id)
+    alert("Grade entry update: Feature requires specific Bearilly submission endpoint.");
   };
 
   const handleVerifyStudent = async (uploadId) => {
-    try {
-      const { error } = await supabase
-        .from('assignment_uploads')
-        .update({ status: 'Verified' })
-        .eq('id', uploadId);
-
-      if (error) throw error;
-      alert("Submission status updated to Verified.");
-      fetchInstructorTelemetry();
-    } catch (err) {
-      alert(`Verification error: ${err.message}`);
-    }
+    // TODO: Implement via Bearilly API
+    alert("Verification: Feature requires specific Bearilly submission endpoint.");
   };
 
-  // 1. DEPLOY MODULE PIPELINE
   const handleDeployModule = async (e) => {
     e.preventDefault();
-    if (!moduleTitle || !selectedCourse) {
-      alert("Please complete required structural fields.");
-      return;
-    }
-
-    try {
-      let finalFileUrl = null;
-
-      if (moduleFile) {
-        const fileExt = moduleFile.name.split('.').pop();
-        const fileName = `${selectedCourse}-mod-${Date.now()}.${fileExt}`;
-        const filePath = `module_assets/${fileName}`;
-
-        const { error: uploadErr } = await supabase.storage
-          .from('course-materials') 
-          .upload(filePath, moduleFile);
-
-        if (uploadErr) throw uploadErr;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('course-materials')
-          .getPublicUrl(filePath);
-
-        finalFileUrl = publicUrl;
-      }
-
-      const { error } = await supabase
-        .from('modules') 
-        .insert([{
-          course_id: selectedCourse,
-          title: moduleTitle,
-          module_notes_url: finalFileUrl, 
-          sort_order: parseInt(moduleOrder, 10),
-          start_page: null 
-        }]);
-
-      if (error) throw error;
-
-      alert(`Module segment [${moduleTitle}] injected successfully!`);
-      setModuleTitle('');
-      setModuleFile(null);
-      setModuleOrder(prev => String(parseInt(prev, 10) + 1));
-
-    } catch (err) {
-      alert(`Module deployment failure: ${err.message}`);
-    }
+    // TODO: Implement via Bearilly API
+    alert("Module deployment: Feature requires specific Bearilly curriculum endpoint.");
   };
 
-  // 2. DEPLOY LESSON PIPELINE
   const handleDeployLesson = async (e) => {
     e.preventDefault();
-    if (!lessonTitle || !selectedCourse) {
-      alert("Please ensure a target course is selected.");
-      return;
-    }
-
-    try {
-      let finalContentUrl = null;
-
-      if (lessonFile) {
-        const fileExt = lessonFile.name.split('.').pop();
-        const fileName = `${selectedCourse}-les-${Date.now()}.${fileExt}`;
-        const filePath = `lesson_assets/${fileName}`;
-
-        const { error: uploadErr } = await supabase.storage
-          .from('course-materials')
-          .upload(filePath, lessonFile);
-
-        if (uploadErr) throw uploadErr;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('course-materials')
-          .getPublicUrl(filePath);
-
-        finalContentUrl = publicUrl;
-      }
-
-      const { error } = await supabase
-        .from('lessons')
-        .insert([{
-          course_id: selectedCourse,
-          title: lessonTitle,
-          sort_order: parseInt(lessonOrder, 10),
-          description: lessonDescription || null,
-          example: lessonExample || null,
-          content_url: finalContentUrl
-        }]);
-
-      if (error) throw error;
-
-      alert(`Lesson node [${lessonTitle}] uploaded and linked successfully!`);
-      setLessonTitle('');
-      setLessonFile(null);
-      setLessonDescription('');
-      setLessonExample('');
-      setLessonOrder(prev => String(parseInt(prev, 10) + 1));
-
-    } catch (err) {
-      alert(`Lesson deployment failure: ${err.message}`);
-    }
+    // TODO: Implement via Bearilly API
+    alert("Lesson deployment: Feature requires specific Bearilly curriculum endpoint.");
   };
 
-  // 3. DEPLOY QUIZ PIPELINE
   const handleDeployQuiz = async (e) => {
     e.preventDefault();
-    if (!quizQuestion || !optA || !optB || !optC || !optD || !correctAnswer) {
-      alert("Please complete all fields and explicitly assign a correct answer option.");
-      return;
-    }
-
-    const optionsArray = [optA, optB, optC, optD];
-
-    try {
-      const { error } = await supabase
-        .from('quizzes')
-        .insert([{
-          course_id: selectedCourse,
-          question: quizQuestion,
-          options: optionsArray,
-          correct_answer: correctAnswer
-        }]);
-
-      if (error) throw error;
-
-      alert("Quiz question node successfully linked to backend schema!");
-      setQuizQuestion('');
-      setOptA('');
-      setOptB('');
-      setOptC('');
-      setOptD('');
-      setCorrectAnswer('');
-    } catch (err) {
-      alert(`Quiz injection failure: ${err.message}`);
-    }
+    // TODO: Implement via Bearilly API
+    alert("Quiz deployment: Feature requires specific Bearilly curriculum endpoint.");
   };
 
-  // 4. DEPLOY ASSIGNMENT PIPELINE (Matches schema keys)
   const handleDeployAssignment = async (e) => {
     e.preventDefault();
-    if (!assignmentTitle || !selectedCourse) {
-      alert("Please complete core assignment parameters.");
-      return;
-    }
-
-    try {
-      let finalFileUrl = null;
-
-      if (assignmentFile) {
-        const fileExt = assignmentFile.name.split('.').pop();
-        const fileName = `${selectedCourse}-assign-${Date.now()}.${fileExt}`;
-        const filePath = `assignment_templates/${fileName}`;
-
-        const { error: uploadErr } = await supabase.storage
-          .from('course-materials') 
-          .upload(filePath, assignmentFile);
-
-        if (uploadErr) throw uploadErr;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('course-materials')
-          .getPublicUrl(filePath);
-
-        finalFileUrl = publicUrl;
-      }
-
-      const { error } = await supabase
-        .from('assignments')
-        .insert([{
-          course_id: selectedCourse,
-          title: assignmentTitle,
-          submission_requirements: submissionRequirements || null,
-          evaluation_criteria: evaluationCriteria || null,
-          file_url: finalFileUrl
-        }]);
-
-      if (error) throw error;
-
-      alert(`Assignment [${assignmentTitle}] deployed successfully!`);
-      setAssignmentTitle('');
-      setSubmissionRequirements('');
-      setEvaluationCriteria('');
-      setAssignmentFile(null);
-    } catch (err) {
-      alert(`Assignment deployment failure: ${err.message}`);
-    }
+    // TODO: Implement via Bearilly API
+    alert("Assignment deployment: Feature requires specific Bearilly curriculum endpoint.");
   };
 
   if (loading) {
@@ -456,7 +242,6 @@ export default function InstructorDashboard() {
               </select>
             </div>
 
-            {/* PIPELINE 1: CORE MODULE CONFIGURATION */}
             {injectorType === 'module' && (
               <form onSubmit={handleDeployModule} className="space-y-4 font-mono text-xs">
                 <div className="grid grid-cols-3 gap-4">
@@ -479,7 +264,6 @@ export default function InstructorDashboard() {
               </form>
             )}
 
-            {/* PIPELINE 2: LESSON ASSIGNMENT */}
             {injectorType === 'lesson' && (
               <form onSubmit={handleDeployLesson} className="space-y-4 font-mono text-xs">
                 <div className="grid grid-cols-3 gap-4">
@@ -514,7 +298,6 @@ export default function InstructorDashboard() {
               </form>
             )}
 
-            {/* PIPELINE 3: QUIZ WORKSPACE INJECTOR */}
             {injectorType === 'quiz' && (
               <form onSubmit={handleDeployQuiz} className="space-y-4 font-mono text-xs">
                 <div className="flex flex-col space-y-1.5">
@@ -549,7 +332,6 @@ export default function InstructorDashboard() {
               </form>
             )}
 
-            {/* PIPELINE 4: ASSIGNMENT WORKSPACE INJECTOR */}
             {injectorType === 'assignment' && (
               <form onSubmit={handleDeployAssignment} className="space-y-4 font-mono text-xs">
                 <div className="flex flex-col space-y-1.5">

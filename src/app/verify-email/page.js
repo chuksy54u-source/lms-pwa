@@ -21,7 +21,9 @@ export default function VerifyEmail() {
 
   const handleVerifyConfirm = (e) => {
     e.preventDefault();
-    router.push('/login'); // Sends them to sign in once they verify
+    // Bearilly integration: Auth is handled via /api/bearilly-login.
+    // Verification is handled by the Bearilly backend; redirecting to login.
+    router.push('/login');
   };
 
   return (

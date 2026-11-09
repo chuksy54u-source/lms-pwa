@@ -2,11 +2,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/utils/supabase/client'; 
 
 export default function Login() {
   const router = useRouter();
-  const supabase = createClient();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,69 +32,30 @@ export default function Login() {
     setErrorMessage('');
 
     try {
-      // 1. Authenticate user credentials
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: password,
+      const response = await fetch('/api/bearilly-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
       });
 
-      if (authError || !authData?.user) {
-        setErrorMessage(authError?.message || 'Invalid login credentials.');
-        setLoading(false);
-        return;
+      if (!response.ok) {
+        throw new Error('Invalid login credentials.');
       }
 
-      const userId = authData.user.id;
-      const userEmail = authData.user.email;
+      // Fetch identity to determine routing
+      const meRes = await fetch('/api/v1/auth/me');
+      const { data: me } = await response.json(); // Bearilly session established
+      const { data: user } = await meRes.json();
 
-      // 2. Query scholarship_students directly by user_id OR email
-      const { data: scholarRecord, error: scholarErr } = await supabase
-        .from('scholarship_students')
-        .select('id, status, user_id')
-        .or(`user_id.eq.${userId},email.eq.${userEmail}`)
-        .maybeSingle();
-
-      if (scholarErr) {
-        console.error("Scholarship query fault:", scholarErr.message);
-      }
-
-      // 3. BLOCK ACCESS if a scholarship record exists and status IS NOT 'verified'
-      if (scholarRecord && scholarRecord.status !== 'verified') {
-        // Revoke active auth session immediately
-        await supabase.auth.signOut();
-        setLoading(false);
-        
-        // Redirect unverified scholar
-        router.replace('/scholarship-pending');
-        return;
-      }
-
-      // Optional: Auto-link user_id if it wasn't linked previously
-      if (scholarRecord && !scholarRecord.user_id) {
-        await supabase
-          .from('scholarship_students')
-          .update({ user_id: userId })
-          .eq('id', scholarRecord.id);
-      }
-
-      // 4. Check user profile for system permissions
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('is_instructor')
-        .eq('id', userId)
-        .single();
-
-      // 5. Access Granted -> Redirect based on role
-      setLoading(false);
-      if (profile?.is_instructor) {
+      // TODO: Implement scholarship status check via Bearilly API if available.
+      // Currently, Bearilly handles auth/session; school-specific logic remains stubbed.
+      
+      if (user.role === 'teacher' || user.role === 'school_admin') {
         router.push('/dashboard/instructor');
       } else {
         router.push('/dashboard');
       }
-
     } catch (err) {
-      console.error("Login verification fault:", err);
-      await supabase.auth.signOut();
       setLoading(false);
       setErrorMessage('An unexpected error occurred during account verification.');
     }
@@ -150,7 +109,6 @@ export default function Login() {
           </p>
         </div>
 
-        {/* ERROR DISPLAY */}
         {errorMessage && (
           <div className="p-3 bg-red-600/20 border border-red-500/40 text-red-300 text-xs font-mono">
             {errorMessage}

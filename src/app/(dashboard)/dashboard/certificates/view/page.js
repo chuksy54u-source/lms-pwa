@@ -23,7 +23,20 @@ function CertificateViewerContent() {
     const fetchReviewDetails = async () => {
       setLoading(true);
       try {
-        // 1. Fetch data from certificates table
+        // Fetch current authenticated profile metadata via Bearilly Auth API
+        let bearillyUser = null;
+        try {
+          const res = await fetch('/api/v1/auth/me', { credentials: 'same-origin' });
+          if (res.ok) {
+            const json = await res.json();
+            bearillyUser = json.data || json;
+          }
+        } catch (e) {
+          console.error('Error fetching Bearilly identity:', e);
+        }
+
+        // TODO: Bearilly certificate verification endpoint mapping
+        // Fetch certificate record safely from local store as fallback
         const { data: cert } = await supabase
           .from('certificates')
           .select('issued_at, certificateimage_url')
@@ -31,14 +44,29 @@ function CertificateViewerContent() {
           .eq('course_id', courseId)
           .maybeSingle();
 
-        // 2. Fetch course specifics
-        const { data: course } = await supabase
-          .from('courses')
-          .select('title, category, description')
-          .eq('id', courseId)
-          .maybeSingle();
+        // Check Bearilly enrolled courses first before fallback course query
+        let courseInfo = null;
+        if (bearillyUser?.progress?.courses) {
+          const matched = bearillyUser.progress.courses.find(c => String(c.id || c.course_id) === String(courseId));
+          if (matched) {
+            courseInfo = {
+              title: matched.title || matched.name,
+              category: matched.category || 'General',
+              description: matched.description || 'Verified Bearilly course curriculum node.'
+            };
+          }
+        }
 
-        // 3. Fetch assignment submission metrics (including file and grades)
+        if (!courseInfo) {
+          const { data: course } = await supabase
+            .from('courses')
+            .select('title, category, description')
+            .eq('id', courseId)
+            .maybeSingle();
+          courseInfo = course;
+        }
+
+        // Fetch assignment submission metrics
         const { data: uploadInfo } = await supabase
           .from('assignment_uploads')
           .select('full_name, document_url, grade, score, created_at')
@@ -47,12 +75,12 @@ function CertificateViewerContent() {
           .limit(1)
           .maybeSingle();
 
-        if (course) {
+        if (courseInfo || cert || uploadInfo) {
           setPanelData({
-            courseTitle: course.title,
-            courseCategory: course.category || 'General',
-            courseDescription: course.description || 'No course curriculum node description logged.',
-            studentName: uploadInfo?.full_name || 'Distinguished Student',
+            courseTitle: courseInfo?.title || 'Verified Course',
+            courseCategory: courseInfo?.category || 'General',
+            courseDescription: courseInfo?.description || 'No course curriculum node description logged.',
+            studentName: bearillyUser?.full_name || uploadInfo?.full_name || 'Distinguished Student',
             assignmentFile: uploadInfo?.document_url || '#',
             assignmentScore: uploadInfo?.score || uploadInfo?.grade || '100%',
             submittedAt: uploadInfo?.created_at ? new Date(uploadInfo.created_at).toLocaleDateString('en-US', {

@@ -22,43 +22,46 @@ export default function CoursesBrowser() {
     const fetchCoursesAndEnrollments = async () => {
       setLoading(true);
       
-      // 1. Fetch user session
-      const { data: { user } } = await supabase.auth.getUser();
+      try {
+        // 1. Fetch user session from Bearilly
+        const meRes = await fetch('/api/v1/auth/me', { credentials: 'same-origin' });
+        const meJson = await meRes.json();
+        const user = meJson.data;
 
-      // 2. Parallel data fetch matching your exact schema layout
-      const [coursesRes, enrollmentsRes] = await Promise.all([
-        supabase.from('courses').select('id, title, category, duration, difficulty, banner, description, notes_url, video_url'),
-        user ? supabase.from('enrollments').select('course_id, status').eq('user_id', user.id) : null
-      ]);
+        // 2. Fetch courses from Bearilly
+        const coursesRes = await fetch('/api/v1/courses', { credentials: 'same-origin' });
+        const coursesJson = await coursesRes.json();
+        const coursesData = coursesJson.data || [];
+        
+        setCourses(coursesData);
 
-      if (!coursesRes.error && coursesRes.data) {
-        setCourses(coursesRes.data);
+        if (user) {
+          const approvedSet = new Set();
+          const pendingSet = new Set();
+
+          coursesData.forEach(item => {
+            // Bearilly returns an 'enrolled' boolean. 
+            // We map enrolled: true to the 'approved' state in the original design.
+            if (item.enrolled) {
+              approvedSet.add(item.id);
+            }
+          });
+
+          setApprovedEnrolledIds(approvedSet);
+          setPendingEnrolledIds(pendingSet);
+        }
+      } catch (error) {
+        console.error("Data fetch fault:", error);
+      } finally {
+        setLoading(false);
       }
-
-      if (enrollmentsRes && !enrollmentsRes.error && enrollmentsRes.data) {
-        const approvedSet = new Set();
-        const pendingSet = new Set();
-
-        enrollmentsRes.data.forEach(item => {
-          if (item.status === 'approved') {
-            approvedSet.add(item.course_id);
-          } else {
-            pendingSet.add(item.course_id);
-          }
-        });
-
-        setApprovedEnrolledIds(approvedSet);
-        setPendingEnrolledIds(pendingSet);
-      }
-      
-      setLoading(false);
     };
 
     fetchCoursesAndEnrollments();
   }, [supabase]);
 
   const handleCourseAction = async (course) => {
-    // 1. Gatekeeper Shield: If enrollment is approved, open workspace path using the course ID text string
+    // 1. Gatekeeper Shield: If enrollment is approved, open workspace path
     if (approvedEnrolledIds.has(course.id)) {
       router.push(`/dashboard/courses/${course.id}`);
       return;
@@ -72,29 +75,48 @@ export default function CoursesBrowser() {
 
     setActionLoading(course.id);
     
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      alert("Authentication required to modify course allocations.");
-      setActionLoading(null);
-      return;
-    }
+    try {
+      const meRes = await fetch('/api/v1/auth/me', { credentials: 'same-origin' });
+      const meJson = await meRes.json();
+      const user = meJson.data;
 
-    const { error } = await supabase
-      .from('enrollments')
-      .insert([{ user_id: user.id, course_id: course.id, status: 'pending' }]);
+      if (!user) {
+        alert("Authentication required to modify course allocations.");
+        setActionLoading(null);
+        return;
+      }
 
-    if (error) {
-      console.error("Enrollment handshake fault:", error.message);
-      alert("Failed to initialize course allocation stream.");
-    } else {
-      setPendingEnrolledIds(prev => {
-        const next = new Set(prev);
-        next.add(course.id);
-        return next;
+      // Enroll via Bearilly API
+      const res = await fetch('/api/v1/enrolments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ course_id: course.id }),
+        credentials: 'same-origin'
       });
-      alert("Ticket Generated! Your enrollment request has been submitted to the Root Administration Queue.");
+
+      if (res.ok) {
+        // Refresh course list to update enrollment status
+        const refreshRes = await fetch('/api/v1/courses', { credentials: 'same-origin' });
+        const refreshJson = await refreshRes.json();
+        const newData = refreshJson.data || [];
+        setCourses(newData);
+        
+        const approvedSet = new Set();
+        newData.forEach(item => {
+          if (item.enrolled) approvedSet.add(item.id);
+        });
+        setApprovedEnrolledIds(approvedSet);
+
+        alert("Ticket Generated! Your enrollment request has been submitted to the Root Administration Queue.");
+      } else {
+        alert("Failed to initialize course allocation stream.");
+      }
+    } catch (err) {
+      console.error("Enrollment handshake fault:", err);
+      alert("Failed to initialize course allocation stream.");
+    } finally {
+      setActionLoading(null);
     }
-    setActionLoading(null);
   };
 
   const filteredCourses = selectedCategory === 'All' 
@@ -140,9 +162,9 @@ export default function CoursesBrowser() {
               
               {/* Image Banner Container */}
               <div className="h-40 relative bg-slate-900 border-b border-white/5 overflow-hidden">
-                {course.banner ? (
+                {(course.banner || course.image_url) ? (
                   <img 
-                    src={course.banner} 
+                    src={course.banner || course.image_url} 
                     alt={course.title} 
                     className="w-full h-full object-cover opacity-30 group-hover:opacity-50 transition-all duration-500 scale-100 group-hover:scale-105" 
                   />
@@ -154,13 +176,13 @@ export default function CoursesBrowser() {
                 
                 {/* Difficulty Tag */}
                 <span className="absolute top-4 left-4 text-[9px] font-mono font-bold uppercase px-2 py-1 text-white bg-blue-600">
-                  {course.difficulty || 'Intermediate'}
+                  {course.level || course.difficulty || 'Intermediate'}
                 </span>
 
                 {/* Duration Tag */}
-                {course.duration && (
+                {(course.duration || course.lessons) && (
                   <span className="absolute bottom-4 right-4 text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 bg-black/80 border border-white/10 text-slate-300">
-                    ⏱️ {course.duration}
+                    ⏱️ {course.duration || `${course.lessons} Lessons`}
                   </span>
                 )}
               </div>

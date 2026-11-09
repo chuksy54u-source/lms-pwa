@@ -71,6 +71,7 @@ export default function WelcomeOnboarding() {
         </div>
 
         <div className="pt-2">
+          {/* TODO: Verify Bearilly session status via /api/v1/auth/me before routing to dashboard */}
           <Link href="/dashboard" className="block w-full text-center rounded-none bg-red-600 py-3.5 text-xs font-bold uppercase tracking-widest text-white hover:bg-white hover:text-black transition-all duration-300 shadow-lg shadow-red-600/10">
             Go to Workspace
           </Link>

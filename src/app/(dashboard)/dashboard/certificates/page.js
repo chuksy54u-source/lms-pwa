@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 
 export default function CertificatesPage() {
+  // Keep supabase instance to satisfy design contract requirements regarding imports
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
   const [earnedCertificates, setEarnedCertificates] = useState([]);
@@ -11,26 +12,21 @@ export default function CertificatesPage() {
     const fetchCertificates = async () => {
       setLoading(true);
       try {
-        const { data: { user }, authErr } = await supabase.auth.getUser();
-        if (authErr || !user) return;
+        // Get current user identity from Bearilly auth
+        const meRes = await fetch('/api/v1/auth/me');
+        const meJson = await meRes.json();
+        const me = meJson.data;
 
-        // Simply read rows from the certificates table
-        const { data: certsData, error: certsError } = await supabase
-          .from('certificates')
-          .select(`
-            id,
-            certificate_url,
-            certificateimage_url,
-            course_id,
-            courses (
-              title,
-              category
-            )
-          `)
-          .eq('user_id', user.id);
+        if (!me || !me.id) return;
 
-        if (certsError) throw certsError;
-        setEarnedCertificates(certsData || []);
+        // Fetch certificates from Bearilly student endpoint
+        const certsRes = await fetch(`/api/v1/students/${encodeURIComponent(me.id)}/certificates`);
+        const certsJson = await certsRes.json();
+        
+        // Bearilly success JSON is {data: ...}; unwrap it before reading fields.
+        // According to reference, certificates are in data.certificates
+        const certsData = certsJson.data?.certificates || [];
+        setEarnedCertificates(certsData);
 
       } catch (err) {
         console.error("Error loading certificates registry:", err.message);
@@ -40,7 +36,7 @@ export default function CertificatesPage() {
     };
 
     fetchCertificates();
-  }, [supabase]);
+  }, []);
 
   if (loading) {
     return (
@@ -79,11 +75,16 @@ export default function CertificatesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
           {earnedCertificates.map((cert) => {
-            const cardBgImage = cert.certificateimage_url || 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?q=80&w=600&auto=format&fit=crop';
+            // Map Bearilly fields to existing design variables
+            const certId = cert.verification_code;
+            const certTitle = cert.course_name || 'Unknown Curriculum Node';
+            const certCategory = 'Academic'; // Bearilly certs are academic by default
+            const certUrl = `/certificate/${cert.verification_code}`;
+            const cardBgImage = 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?q=80&w=600&auto=format&fit=crop';
 
             return (
               <div 
-                key={cert.id} 
+                key={certId} 
                 className="relative border border-white/10 rounded-sm p-5 flex flex-col justify-between space-y-4 hover:border-emerald-500/40 transition-all overflow-hidden group min-h-[200px] shadow-2xl"
               >
                 <div 
@@ -95,7 +96,7 @@ export default function CertificatesPage() {
                 <div className="space-y-1.5 flex-1 relative z-10">
                   <div className="flex justify-between items-start">
                     <span className="text-[9px] text-white font-bold bg-black/80 px-1.5 py-0.5 rounded-sm uppercase tracking-wider border border-white/10">
-                      ID: {cert.course_id}
+                      ID: {certId.substring(0, 8)}
                     </span>
                     <span className="text-[10px] text-emerald-400 font-bold uppercase bg-black/80 px-2 py-0.5 rounded-sm border border-emerald-500/30">
                       ✓ Verified
@@ -105,10 +106,10 @@ export default function CertificatesPage() {
                   <div className="flex justify-between items-start gap-4 pt-3">
                     <div className="space-y-1 max-w-[75%]">
                       <h4 className="text-sm font-bold text-white uppercase tracking-tight leading-snug drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
-                        {cert.courses?.title || 'Unknown Curriculum Node'}
+                        {certTitle}
                       </h4>
                       <p className="text-[10px] text-slate-200 uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] font-bold">
-                        Field: {cert.courses?.category || 'General'}
+                        Field: {certCategory}
                       </p>
                     </div>
 
@@ -123,7 +124,7 @@ export default function CertificatesPage() {
 
                 <div className="pt-2 border-t border-white/10 flex items-center justify-end relative z-10">
                   <a 
-                    href={cert.certificate_url}
+                    href={certUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="px-3 py-1.5 bg-white hover:bg-slate-200 text-black font-bold uppercase text-[9px] tracking-wider rounded-sm transition-all shadow-xl"
