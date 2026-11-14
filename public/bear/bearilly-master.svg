@@ -1,0 +1,635 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" class="bearilly" viewBox="0 0 480 560" width="480" height="560" role="img" aria-label="Bearilly the bear" data-size="full" data-emotion="adorable" data-eyes="open" data-mouth="closed" data-pose="idle" data-look="none" data-side="r" data-acc-head="none" data-acc-face="none" data-acc-neck="none">
+<title>Bearilly master: every layer, state set by data attributes on this root element</title>
+<style><![CDATA[
+.bearilly{display:block;overflow:visible}
+.bearilly[data-size="head"],.bearilly[data-size="bust"]{overflow:hidden}
+.bearilly *{pointer-events:none}
+.bearilly .fur{fill:var(--bear-fur,#C99B68)}
+.bearilly .ear{fill:var(--bear-ear,#D7A07A)}
+.bearilly .cream{fill:var(--bear-cream,#EFD9B9)}
+.bearilly .nose{fill:var(--bear-nose,#4A2C17)}
+.bearilly .mouth{fill:var(--bear-mouth,#7A2E2E)}
+.bearilly .tongue{fill:var(--bear-tongue,#E9807F)}
+.bearilly .blush{fill:var(--bear-blush,#F2A199);opacity:.75}
+.bearilly .ol{stroke:var(--bear-outline,#5A3A22);stroke-linecap:round;stroke-linejoin:round}
+.bearilly .olb{stroke:var(--bear-outline,#5A3A22);stroke-linecap:butt;stroke-linejoin:round}
+.bearilly .ln{fill:none;stroke:var(--bear-outline,#5A3A22);stroke-linecap:round;stroke-linejoin:round}
+.bearilly .fs{fill:none;stroke:var(--bear-fur,#C99B68);stroke-linecap:round;stroke-linejoin:round}
+.bearilly .brow{fill:none;stroke:var(--bear-nose,#4A2C17);stroke-linecap:round;stroke-linejoin:round}
+.bearilly .hs{fill:none;stroke:#3B4160;stroke-linecap:round}
+.bearilly .hsf{fill:#3B4160}
+.bearilly .bt{stroke-linecap:butt}
+.bearilly .s-primary-dark-243a66{fill:var(--school-primary-dark,#243A66)}
+.bearilly .s-primary-2e4a86{fill:var(--school-primary,#2E4A86)}
+.bearilly .s-secondary-f2b52e{fill:var(--school-secondary,#F2B52E)}
+.bearilly .s-secondary-f2b52e-st{stroke:var(--school-secondary,#F2B52E)}
+.bearilly .s-primary-e0533d{fill:var(--school-primary,#E0533D)}
+.bearilly .s-primary-e0533d-st{stroke:var(--school-primary,#E0533D)}
+.bearilly .s-primary-2e7d5b{fill:var(--school-primary,#2E7D5B)}
+.bearilly .s-secondary-ffffff-st{stroke:var(--school-secondary,#FFFFFF)}
+.bearilly .s-primary-d9462e{fill:var(--school-primary,#D9462E)}
+.bearilly .s-primary-dark-ae3825{fill:var(--school-primary-dark,#AE3825)}
+.bearilly .s-primary-e8892b{fill:var(--school-primary,#E8892B)}
+.bearilly .s-primary-dark-ba6e22{fill:var(--school-primary-dark,#BA6E22)}
+.bearilly .s-secondary-ffe08a{fill:var(--school-secondary,#FFE08A)}
+.bearilly .s-primary-d9462e-st{stroke:var(--school-primary,#D9462E)}
+.bearilly .v{opacity:0}
+.bearilly[data-emotion="adorable"][data-eyes="open"][data-look="none"] [data-layer="eyes--adorable-open"]{opacity:1}
+.bearilly[data-emotion="adorable"][data-eyes="half"] [data-layer="eyes--adorable-half"]{opacity:1}
+.bearilly[data-emotion="adorable"][data-eyes="closed"] [data-layer="eyes--adorable-closed"]{opacity:1}
+.bearilly[data-emotion="adorable"][data-mouth="closed"] [data-layer="mouth--adorable-closed"]{opacity:1}
+.bearilly[data-emotion="adorable"][data-mouth="half"] [data-layer="mouth--adorable-half"]{opacity:1}
+.bearilly[data-emotion="adorable"][data-mouth="wide"] [data-layer="mouth--adorable-wide"]{opacity:1}
+.bearilly[data-emotion="adorable"] [data-layer="brows--adorable"]{opacity:1}
+.bearilly[data-emotion="worried"][data-eyes="open"] [data-layer="eyes--worried-open"]{opacity:1}
+.bearilly[data-emotion="worried"][data-eyes="half"] [data-layer="eyes--worried-half"]{opacity:1}
+.bearilly[data-emotion="worried"][data-eyes="closed"] [data-layer="eyes--worried-closed"]{opacity:1}
+.bearilly[data-emotion="worried"][data-mouth="closed"] [data-layer="mouth--worried-closed"]{opacity:1}
+.bearilly[data-emotion="worried"][data-mouth="half"] [data-layer="mouth--worried-half"]{opacity:1}
+.bearilly[data-emotion="worried"][data-mouth="wide"] [data-layer="mouth--worried-wide"]{opacity:1}
+.bearilly[data-emotion="worried"] [data-layer="brows--worried"]{opacity:1}
+.bearilly[data-emotion="intense"][data-eyes="open"] [data-layer="eyes--intense-open"]{opacity:1}
+.bearilly[data-emotion="intense"][data-eyes="half"] [data-layer="eyes--intense-half"]{opacity:1}
+.bearilly[data-emotion="intense"][data-eyes="closed"] [data-layer="eyes--intense-closed"]{opacity:1}
+.bearilly[data-emotion="intense"][data-mouth="closed"] [data-layer="mouth--intense-closed"]{opacity:1}
+.bearilly[data-emotion="intense"][data-mouth="half"] [data-layer="mouth--intense-half"]{opacity:1}
+.bearilly[data-emotion="intense"][data-mouth="wide"] [data-layer="mouth--intense-wide"]{opacity:1}
+.bearilly[data-emotion="intense"] [data-layer="brows--intense"]{opacity:1}
+.bearilly[data-emotion="pleading"][data-eyes="open"] [data-layer="eyes--pleading-open"]{opacity:1}
+.bearilly[data-emotion="pleading"][data-eyes="half"] [data-layer="eyes--pleading-half"]{opacity:1}
+.bearilly[data-emotion="pleading"][data-eyes="closed"] [data-layer="eyes--pleading-closed"]{opacity:1}
+.bearilly[data-emotion="pleading"][data-mouth="closed"] [data-layer="mouth--pleading-wobble"]{opacity:1}
+.bearilly[data-emotion="pleading"][data-mouth="half"] [data-layer="mouth--pleading-half"]{opacity:1}
+.bearilly[data-emotion="pleading"][data-mouth="wide"] [data-layer="mouth--pleading-wide"]{opacity:1}
+.bearilly[data-emotion="pleading"] [data-layer="brows--pleading"]{opacity:1}
+.bearilly[data-emotion="adorable"][data-eyes="open"][data-look="left"] [data-layer="eyes--look-left"]{opacity:1}
+.bearilly[data-emotion="adorable"][data-eyes="open"][data-look="right"] [data-layer="eyes--look-right"]{opacity:1}
+.bearilly[data-emotion="adorable"][data-eyes="open"][data-look="up"] [data-layer="eyes--look-up"]{opacity:1}
+.bearilly[data-emotion="adorable"] [data-layer="cheeks--on"],.bearilly[data-emotion="adorable"] [data-layer="fx--sparkles"]{opacity:1}
+.bearilly[data-emotion="pleading"] [data-layer="cheeks--on"],.bearilly[data-emotion="pleading"] [data-layer="fx--tears"]{opacity:1}
+.bearilly[data-emotion="worried"] [data-layer="fx--sweat"]{opacity:1}
+.bearilly[data-emotion="intense"] [data-layer="fx--exclaim"]{opacity:1}
+.bearilly[data-celebrate] [data-layer="fx--stars"]{opacity:1}
+.bearilly[data-pose="idle"] [data-layer="arm-l--idle"],.bearilly[data-pose="idle"] [data-layer="arm-r--idle"]{opacity:1}
+.bearilly[data-pose="cheeks"] [data-layer="arm-l--cheeks"],.bearilly[data-pose="cheeks"] [data-layer="arm-r--cheeks"]{opacity:1}
+.bearilly[data-pose="clasp"] [data-layer="arm-l--clasp"],.bearilly[data-pose="clasp"] [data-layer="arm-r--clasp"]{opacity:1}
+.bearilly[data-pose="coach"] [data-layer="arm-l--coach"],.bearilly[data-pose="coach"] [data-layer="arm-r--coach"]{opacity:1}
+.bearilly[data-pose="point"][data-side="r"] [data-layer="arm-r--point"],.bearilly[data-pose="point"][data-side="r"] [data-layer="arm-l--idle"]{opacity:1}
+.bearilly[data-pose="point"][data-side="l"] [data-layer="arm-l--point"],.bearilly[data-pose="point"][data-side="l"] [data-layer="arm-r--idle"]{opacity:1}
+.bearilly[data-pose="wave"][data-side="r"] [data-layer="arm-r--wave"],.bearilly[data-pose="wave"][data-side="r"] [data-layer="arm-l--idle"]{opacity:1}
+.bearilly[data-pose="wave"][data-side="l"] [data-layer="arm-l--wave"],.bearilly[data-pose="wave"][data-side="l"] [data-layer="arm-r--idle"]{opacity:1}
+.bearilly[data-acc-head="gradcap"] [data-layer="acc-head--gradcap"]{opacity:1}
+.bearilly[data-acc-head="headset"] [data-layer="acc-head--headset"]{opacity:1}
+.bearilly[data-acc-head="partyhat"] [data-layer="acc-head--partyhat"]{opacity:1}
+.bearilly[data-acc-face="glasses"] [data-layer="acc-face--glasses"]{opacity:1}
+.bearilly[data-acc-neck="scarf"] [data-layer="acc-neck--scarf"]{opacity:1}
+.bearilly[data-acc-neck="bowtie"] [data-layer="acc-neck--bowtie"]{opacity:1}
+.bearilly[data-acc-neck="ankara"] [data-layer="acc-neck--ankara"]{opacity:1}
+.bearilly[data-acc-neck="medal"] [data-layer="acc-neck--medal"]{opacity:1}
+.bearilly[data-fade] .v{transition:opacity .4s ease}
+.bearilly .tilt{transition:transform .4s ease}
+.bearilly[data-emotion="worried"] .tilt{transform:rotate(-5deg)}
+.bearilly[data-emotion="pleading"] .tilt{transform:rotate(-4deg)}
+.bearilly .aim{transition:transform .4s cubic-bezier(.16,.84,.3,1)}
+.bearilly .aim-r{transform:rotate(var(--aim-r,0deg))}
+.bearilly .aim-l{transform:rotate(var(--aim-l,0deg))}
+.bearilly[data-pose="wave"][data-side="r"] .aim-r,.bearilly[data-pose="wave"][data-side="l"] .aim-l{animation:bear-wave .62s ease-in-out infinite alternate}
+.bearilly .breath{animation:bear-breathe 3s ease-in-out infinite}
+.bearilly .twinkle{animation:bear-twinkle 1.6s ease-in-out infinite}
+.bearilly .drip{animation:bear-drip 2.2s ease-in infinite}
+.bearilly[data-celebrate] .figure{animation:bear-bounce .5s cubic-bezier(.2,.9,.3,1.4)}
+@keyframes bear-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.015)}}
+@keyframes bear-wave{from{transform:rotate(-9deg)}to{transform:rotate(9deg)}}
+@keyframes bear-twinkle{0%,100%{opacity:1}50%{opacity:.55}}
+@keyframes bear-drip{0%{transform:translateY(0);opacity:1}80%{transform:translateY(7px);opacity:.2}100%{transform:translateY(0);opacity:1}}
+@keyframes bear-bounce{0%{transform:translateY(0)}40%{transform:translateY(-14px)}100%{transform:translateY(0)}}
+@media (prefers-reduced-motion:reduce){.bearilly *{animation:none!important;transition:none!important}}
+]]></style>
+<g transform="translate(40 40)">
+  <g class="figure">
+    <g id="shadow" data-layer="shadow">
+      <ellipse cx="200" cy="498" rx="118" ry="13" fill="#000000" opacity="0.12"/>
+    </g>
+    <g id="feet" data-layer="feet">
+      <ellipse cx="150" cy="474" rx="42" ry="24" class="fur ol" stroke-width="5"/>
+      <ellipse cx="250" cy="474" rx="42" ry="24" class="fur ol" stroke-width="5"/>
+      <ellipse cx="150" cy="479" rx="22" ry="12" class="cream"/>
+      <ellipse cx="250" cy="479" rx="22" ry="12" class="cream"/>
+    </g>
+    <g transform="translate(200 468)">
+      <g class="breath">
+        <g transform="translate(-200 -468)">
+          <g id="torso" data-layer="torso">
+            <ellipse cx="200" cy="352" rx="94" ry="116" class="fur ol" stroke-width="5"/>
+          </g>
+          <g id="belly" data-layer="belly">
+            <ellipse cx="200" cy="370" rx="60" ry="74" class="cream"/>
+          </g>
+          <g transform="translate(200 244)">
+            <g class="tilt">
+              <g transform="translate(-200 -244)">
+                <g id="ears" data-layer="ears">
+                  <ellipse cx="110" cy="86" rx="38" ry="38" class="fur ol" stroke-width="5"/>
+                  <ellipse cx="113" cy="91" rx="20" ry="20" class="ear"/>
+                  <ellipse cx="290" cy="86" rx="38" ry="38" class="fur ol" stroke-width="5"/>
+                  <ellipse cx="287" cy="91" rx="20" ry="20" class="ear"/>
+                </g>
+                <g id="head" data-layer="head">
+                  <ellipse cx="200" cy="152" rx="106" ry="92" class="fur ol" stroke-width="5"/>
+                </g>
+                <g id="cheeks--on" data-layer="cheeks--on" class="v">
+                  <ellipse cx="138" cy="190" rx="17" ry="10" class="blush"/>
+                  <ellipse cx="262" cy="190" rx="17" ry="10" class="blush"/>
+                </g>
+                <g id="muzzle" data-layer="muzzle">
+                  <ellipse cx="200" cy="192" rx="55" ry="40" class="cream ol" stroke-width="4"/>
+                </g>
+                <g id="nose" data-layer="nose">
+                  <ellipse cx="200" cy="170" rx="19" ry="13" class="nose"/>
+                  <ellipse cx="193" cy="165" rx="6" ry="3" fill="#FFFFFF" opacity="0.55"/>
+                  <path d="M200 183 L200 195" class="ln" stroke-width="4"/>
+                </g>
+                <g id="eyes--adorable-open" data-layer="eyes--adorable-open" class="v">
+                  <g>
+                    <ellipse cx="158" cy="137" rx="19" ry="23" class="ol" fill="#FFFFFF" stroke-width="3"/>
+                    <ellipse cx="158" cy="141" rx="13" ry="14" fill="#2B1A10"/>
+                    <ellipse cx="163" cy="134" rx="5" ry="5" fill="#FFFFFF"/>
+                    <ellipse cx="154" cy="148" rx="2.5" ry="2.5" fill="#FFFFFF"/>
+                  </g>
+                  <g>
+                    <ellipse cx="242" cy="137" rx="19" ry="23" class="ol" fill="#FFFFFF" stroke-width="3"/>
+                    <ellipse cx="242" cy="141" rx="13" ry="14" fill="#2B1A10"/>
+                    <ellipse cx="247" cy="134" rx="5" ry="5" fill="#FFFFFF"/>
+                    <ellipse cx="238" cy="148" rx="2.5" ry="2.5" fill="#FFFFFF"/>
+                  </g>
+                </g>
+                <g id="eyes--adorable-half" data-layer="eyes--adorable-half" class="v">
+                  <g>
+                    <path d="M139 137 A19 23 0 0 0 177 137 Z" class="ol" fill="#FFFFFF" stroke-width="3"/>
+                    <ellipse cx="158" cy="148" rx="12" ry="10" fill="#2B1A10"/>
+                    <ellipse cx="162" cy="143" rx="3.5" ry="3.5" fill="#FFFFFF"/>
+                  </g>
+                  <g>
+                    <path d="M223 137 A19 23 0 0 0 261 137 Z" class="ol" fill="#FFFFFF" stroke-width="3"/>
+                    <ellipse cx="242" cy="148" rx="12" ry="10" fill="#2B1A10"/>
+                    <ellipse cx="246" cy="143" rx="3.5" ry="3.5" fill="#FFFFFF"/>
+                  </g>
+                </g>
+                <g id="eyes--adorable-closed" data-layer="eyes--adorable-closed" class="v">
+                  <path d="M140 140 Q158 152 176 140" class="brow" stroke-width="4.5"/>
+                  <path d="M224 140 Q242 152 260 140" class="brow" stroke-width="4.5"/>
+                </g>
+                <g id="eyes--worried-open" data-layer="eyes--worried-open" class="v">
+                  <g>
+                    <ellipse cx="158" cy="137" rx="20" ry="25" class="ol" fill="#FFFFFF" stroke-width="3"/>
+                    <ellipse cx="158" cy="141" rx="10" ry="11" fill="#2B1A10"/>
+                    <ellipse cx="163" cy="134" rx="5" ry="5" fill="#FFFFFF"/>
+                    <ellipse cx="154" cy="148" rx="2.5" ry="2.5" fill="#FFFFFF"/>
+                    <path d="M144 157 Q158 164 172 157" fill="none" stroke="#8CC8F0" stroke-width="3" opacity="0.9" stroke-linecap="round"/>
+                  </g>
+                  <g>
+                    <ellipse cx="242" cy="137" rx="20" ry="25" class="ol" fill="#FFFFFF" stroke-width="3"/>
+                    <ellipse cx="242" cy="141" rx="10" ry="11" fill="#2B1A10"/>
+                    <ellipse cx="247" cy="134" rx="5" ry="5" fill="#FFFFFF"/>
+                    <ellipse cx="238" cy="148" rx="2.5" ry="2.5" fill="#FFFFFF"/>
+                    <path d="M228 157 Q242 164 256 157" fill="none" stroke="#8CC8F0" stroke-width="3" opacity="0.9" stroke-linecap="round"/>
+                  </g>
+                </g>
+                <g id="eyes--worried-half" data-layer="eyes--worried-half" class="v">
+                  <g transform="rotate(-10 158 137)">
+                    <path d="M138 137 A20 25 0 0 0 178 137 Z" class="ol" fill="#FFFFFF" stroke-width="3"/>
+                    <ellipse cx="158" cy="148" rx="13" ry="10" fill="#2B1A10"/>
+                    <ellipse cx="162" cy="143" rx="3.5" ry="3.5" fill="#FFFFFF"/>
+                  </g>
+                  <g transform="rotate(10 242 137)">
+                    <path d="M222 137 A20 25 0 0 0 262 137 Z" class="ol" fill="#FFFFFF" stroke-width="3"/>
+                    <ellipse cx="242" cy="148" rx="13" ry="10" fill="#2B1A10"/>
+                    <ellipse cx="246" cy="143" rx="3.5" ry="3.5" fill="#FFFFFF"/>
+                  </g>
+                </g>
+                <g id="eyes--worried-closed" data-layer="eyes--worried-closed" class="v">
+                  <path d="M140 146 Q158 152 176 140" class="brow" stroke-width="4.5"/>
+                  <path d="M224 140 Q242 152 260 146" class="brow" stroke-width="4.5"/>
+                </g>
+                <g id="eyes--intense-open" data-layer="eyes--intense-open" class="v">
+                  <path d="M136 124 L182 140 C180 158 142 162 136 124 Z" class="ol" fill="#FFFFFF" stroke-width="3"/>
+                  <ellipse cx="162" cy="147" rx="8" ry="9" fill="#2B1A10"/>
+                  <ellipse cx="165" cy="144" rx="2.5" ry="2.5" fill="#FFFFFF"/>
+                  <path d="M264 124 L218 140 C220 158 258 162 264 124 Z" class="ol" fill="#FFFFFF" stroke-width="3"/>
+                  <ellipse cx="238" cy="147" rx="8" ry="9" fill="#2B1A10"/>
+                  <ellipse cx="241" cy="144" rx="2.5" ry="2.5" fill="#FFFFFF"/>
+                </g>
+                <g id="eyes--intense-half" data-layer="eyes--intense-half" class="v">
+                  <path d="M136 130 L182 142 C180 152 142 154 136 130 Z" class="ol" fill="#FFFFFF" stroke-width="3"/>
+                  <ellipse cx="162" cy="147" rx="7" ry="5" fill="#2B1A10"/>
+                  <path d="M264 130 L218 142 C220 152 258 154 264 130 Z" class="ol" fill="#FFFFFF" stroke-width="3"/>
+                  <ellipse cx="238" cy="147" rx="7" ry="5" fill="#2B1A10"/>
+                </g>
+                <g id="eyes--intense-closed" data-layer="eyes--intense-closed" class="v">
+                  <path d="M136 128 L184 144" class="brow" stroke-width="6"/>
+                  <path d="M264 128 L216 144" class="brow" stroke-width="6"/>
+                </g>
+                <g id="eyes--pleading-open" data-layer="eyes--pleading-open" class="v">
+                  <g>
+                    <ellipse cx="158" cy="137" rx="22" ry="27" class="ol" fill="#FFFFFF" stroke-width="3"/>
+                    <ellipse cx="158" cy="141" rx="15" ry="16" fill="#2B1A10"/>
+                    <ellipse cx="163" cy="134" rx="5.5" ry="5.5" fill="#FFFFFF"/>
+                    <ellipse cx="154" cy="148" rx="2.5" ry="2.5" fill="#FFFFFF"/>
+                    <ellipse cx="150" cy="132" rx="3" ry="3" fill="#FFFFFF"/>
+                    <path d="M144 157 Q158 164 172 157" fill="none" stroke="#8CC8F0" stroke-width="3" opacity="0.9" stroke-linecap="round"/>
+                  </g>
+                  <g>
+                    <ellipse cx="242" cy="137" rx="22" ry="27" class="ol" fill="#FFFFFF" stroke-width="3"/>
+                    <ellipse cx="242" cy="141" rx="15" ry="16" fill="#2B1A10"/>
+                    <ellipse cx="247" cy="134" rx="5.5" ry="5.5" fill="#FFFFFF"/>
+                    <ellipse cx="238" cy="148" rx="2.5" ry="2.5" fill="#FFFFFF"/>
+                    <ellipse cx="234" cy="132" rx="3" ry="3" fill="#FFFFFF"/>
+                    <path d="M228 157 Q242 164 256 157" fill="none" stroke="#8CC8F0" stroke-width="3" opacity="0.9" stroke-linecap="round"/>
+                  </g>
+                </g>
+                <g id="eyes--pleading-half" data-layer="eyes--pleading-half" class="v">
+                  <g transform="rotate(-10 158 137)">
+                    <path d="M136 137 A22 27 0 0 0 180 137 Z" class="ol" fill="#FFFFFF" stroke-width="3"/>
+                    <ellipse cx="158" cy="148" rx="15" ry="10" fill="#2B1A10"/>
+                    <ellipse cx="162" cy="143" rx="3.5" ry="3.5" fill="#FFFFFF"/>
+                  </g>
+                  <g transform="rotate(10 242 137)">
+                    <path d="M220 137 A22 27 0 0 0 264 137 Z" class="ol" fill="#FFFFFF" stroke-width="3"/>
+                    <ellipse cx="242" cy="148" rx="15" ry="10" fill="#2B1A10"/>
+                    <ellipse cx="246" cy="143" rx="3.5" ry="3.5" fill="#FFFFFF"/>
+                  </g>
+                </g>
+                <g id="eyes--pleading-closed" data-layer="eyes--pleading-closed" class="v">
+                  <path d="M140 146 Q158 152 176 140" class="brow" stroke-width="4.5"/>
+                  <path d="M224 140 Q242 152 260 146" class="brow" stroke-width="4.5"/>
+                </g>
+                <g id="eyes--look-left" data-layer="eyes--look-left" class="v">
+                  <g>
+                    <ellipse cx="158" cy="137" rx="19" ry="23" class="ol" fill="#FFFFFF" stroke-width="3"/>
+                    <ellipse cx="152" cy="141" rx="13" ry="14" fill="#2B1A10"/>
+                    <ellipse cx="157" cy="134" rx="5" ry="5" fill="#FFFFFF"/>
+                    <ellipse cx="148" cy="148" rx="2.5" ry="2.5" fill="#FFFFFF"/>
+                  </g>
+                  <g>
+                    <ellipse cx="242" cy="137" rx="19" ry="23" class="ol" fill="#FFFFFF" stroke-width="3"/>
+                    <ellipse cx="236" cy="141" rx="13" ry="14" fill="#2B1A10"/>
+                    <ellipse cx="241" cy="134" rx="5" ry="5" fill="#FFFFFF"/>
+                    <ellipse cx="232" cy="148" rx="2.5" ry="2.5" fill="#FFFFFF"/>
+                  </g>
+                </g>
+                <g id="eyes--look-right" data-layer="eyes--look-right" class="v">
+                  <g>
+                    <ellipse cx="158" cy="137" rx="19" ry="23" class="ol" fill="#FFFFFF" stroke-width="3"/>
+                    <ellipse cx="164" cy="141" rx="13" ry="14" fill="#2B1A10"/>
+                    <ellipse cx="169" cy="134" rx="5" ry="5" fill="#FFFFFF"/>
+                    <ellipse cx="160" cy="148" rx="2.5" ry="2.5" fill="#FFFFFF"/>
+                  </g>
+                  <g>
+                    <ellipse cx="242" cy="137" rx="19" ry="23" class="ol" fill="#FFFFFF" stroke-width="3"/>
+                    <ellipse cx="248" cy="141" rx="13" ry="14" fill="#2B1A10"/>
+                    <ellipse cx="253" cy="134" rx="5" ry="5" fill="#FFFFFF"/>
+                    <ellipse cx="244" cy="148" rx="2.5" ry="2.5" fill="#FFFFFF"/>
+                  </g>
+                </g>
+                <g id="eyes--look-up" data-layer="eyes--look-up" class="v">
+                  <g>
+                    <ellipse cx="158" cy="137" rx="19" ry="23" class="ol" fill="#FFFFFF" stroke-width="3"/>
+                    <ellipse cx="158" cy="134" rx="13" ry="14" fill="#2B1A10"/>
+                    <ellipse cx="163" cy="127" rx="5" ry="5" fill="#FFFFFF"/>
+                    <ellipse cx="154" cy="141" rx="2.5" ry="2.5" fill="#FFFFFF"/>
+                  </g>
+                  <g>
+                    <ellipse cx="242" cy="137" rx="19" ry="23" class="ol" fill="#FFFFFF" stroke-width="3"/>
+                    <ellipse cx="242" cy="134" rx="13" ry="14" fill="#2B1A10"/>
+                    <ellipse cx="247" cy="127" rx="5" ry="5" fill="#FFFFFF"/>
+                    <ellipse cx="238" cy="141" rx="2.5" ry="2.5" fill="#FFFFFF"/>
+                  </g>
+                </g>
+                <g id="brows--adorable" data-layer="brows--adorable" class="v">
+                  <path d="M132 104 Q158 88 184 102" class="brow" stroke-width="7"/>
+                  <path d="M216 102 Q242 88 268 104" class="brow" stroke-width="7"/>
+                </g>
+                <g id="brows--worried" data-layer="brows--worried" class="v">
+                  <path d="M130 112 Q156 104 184 88" class="brow" stroke-width="7"/>
+                  <path d="M216 88 Q244 104 270 112" class="brow" stroke-width="7"/>
+                </g>
+                <g id="brows--intense" data-layer="brows--intense" class="v">
+                  <path d="M124 98 L190 124" class="brow" stroke-width="10"/>
+                  <path d="M276 98 L210 124" class="brow" stroke-width="10"/>
+                </g>
+                <g id="brows--pleading" data-layer="brows--pleading" class="v">
+                  <path d="M132 108 Q158 98 184 80" class="brow" stroke-width="7"/>
+                  <path d="M216 80 Q242 98 268 108" class="brow" stroke-width="7"/>
+                </g>
+                <g id="mouth--adorable-closed" data-layer="mouth--adorable-closed" class="v">
+                  <g transform="translate(0 4)">
+                    <path d="M200 190 C200 202 190 208 178 202" class="ln" stroke-width="4"/>
+                    <path d="M200 190 C200 202 210 208 222 202" class="ln" stroke-width="4"/>
+                  </g>
+                </g>
+                <g id="mouth--adorable-half" data-layer="mouth--adorable-half" class="v">
+                  <g transform="translate(0 4)">
+                    <path d="M182 194 C185 212 215 212 218 194 C208 197 192 197 182 194 Z" class="mouth ol" stroke-width="3.5"/>
+                    <ellipse cx="200" cy="206" rx="8" ry="3" class="tongue"/>
+                  </g>
+                </g>
+                <g id="mouth--adorable-wide" data-layer="mouth--adorable-wide" class="v">
+                  <g transform="translate(0 4)">
+                    <path d="M178 194 C182 216 218 216 222 194 C210 197 190 197 178 194 Z" class="mouth ol" stroke-width="4"/>
+                    <ellipse cx="200" cy="205" rx="11" ry="4" class="tongue"/>
+                  </g>
+                </g>
+                <g id="mouth--worried-closed" data-layer="mouth--worried-closed" class="v">
+                  <g transform="translate(0 4)">
+                    <path d="M184 205 Q192 198 200 205 T216 205" class="ln" stroke-width="4"/>
+                  </g>
+                </g>
+                <g id="mouth--worried-half" data-layer="mouth--worried-half" class="v">
+                  <g transform="translate(0 4)">
+                    <path d="M188 199 C190 193 210 193 212 199 C210 209 190 209 188 199 Z" class="mouth ol" stroke-width="3.5"/>
+                  </g>
+                </g>
+                <g id="mouth--worried-wide" data-layer="mouth--worried-wide" class="v">
+                  <g transform="translate(0 4)">
+                    <path d="M184 198 C186 190 214 190 216 198 C214 214 186 214 184 198 Z" class="mouth ol" stroke-width="4"/>
+                  </g>
+                </g>
+                <g id="mouth--intense-closed" data-layer="mouth--intense-closed" class="v">
+                  <g transform="translate(0 4)">
+                    <path d="M172 193 L228 193 L224 208 L176 208 Z" class="ol" fill="#FFFFFF" stroke-width="4"/>
+                    <path d="M186 193 L186 208 M200 193 L200 208 M214 193 L214 208 M174 200.5 L226 200.5" class="ln" stroke-width="2"/>
+                  </g>
+                </g>
+                <g id="mouth--intense-half" data-layer="mouth--intense-half" class="v">
+                  <g transform="translate(0 4)">
+                    <path d="M170 191 L230 191 L224 214 L176 214 Z" class="mouth ol" stroke-width="4"/>
+                    <path d="M171.5 192.5 L228.5 192.5 L227.5 201 L172.5 201 Z" fill="#FFFFFF"/>
+                  </g>
+                </g>
+                <g id="mouth--intense-wide" data-layer="mouth--intense-wide" class="v">
+                  <g transform="translate(0 4)">
+                    <path d="M168 190 L232 190 L222 230 L178 230 Z" class="mouth ol" stroke-width="4"/>
+                    <path d="M170 191 L230 191 L228 201 L172 201 Z" fill="#FFFFFF"/>
+                    <ellipse cx="200" cy="222" rx="16" ry="6" class="tongue"/>
+                  </g>
+                </g>
+                <g id="mouth--pleading-wobble" data-layer="mouth--pleading-wobble" class="v">
+                  <g transform="translate(0 4)">
+                    <path d="M184 205 Q189 199 194 205 Q200 212 206 205 Q211 199 216 205" class="ln" stroke-width="4"/>
+                  </g>
+                </g>
+                <g id="mouth--pleading-half" data-layer="mouth--pleading-half" class="v">
+                  <g transform="translate(0 4)">
+                    <path d="M190 200 C191 195 209 195 210 200 C209 209 191 209 190 200 Z" class="mouth ol" stroke-width="3.5"/>
+                  </g>
+                </g>
+                <g id="mouth--pleading-wide" data-layer="mouth--pleading-wide" class="v">
+                  <g transform="translate(0 4)">
+                    <path d="M184 198 C186 190 214 190 216 198 C214 214 186 214 184 198 Z" class="mouth ol" stroke-width="4"/>
+                  </g>
+                </g>
+                <g id="acc-face--glasses" data-layer="acc-face--glasses" class="v">
+                  <ellipse cx="158" cy="138" rx="28" ry="28" fill="#BFE3F5" opacity="0.3"/>
+                  <ellipse cx="242" cy="138" rx="28" ry="28" fill="#BFE3F5" opacity="0.3"/>
+                  <ellipse cx="158" cy="138" rx="28" ry="28" fill="none" stroke="#2B2B33" stroke-width="5"/>
+                  <ellipse cx="242" cy="138" rx="28" ry="28" fill="none" stroke="#2B2B33" stroke-width="5"/>
+                  <path d="M186 134 Q200 124 214 134" fill="none" stroke="#2B2B33" stroke-width="5" stroke-linecap="round"/>
+                  <path d="M130 132 L108 124" fill="none" stroke="#2B2B33" stroke-width="5" stroke-linecap="round"/>
+                  <path d="M270 132 L292 124" fill="none" stroke="#2B2B33" stroke-width="5" stroke-linecap="round"/>
+                </g>
+                <g id="acc-head--gradcap" data-layer="acc-head--gradcap" class="v">
+                  <path d="M150 62 L150 84 Q200 98 250 84 L250 62 Z" class="ol s-primary-dark-243a66" stroke-width="4"/>
+                  <path d="M200 20 L306 54 L200 88 L94 54 Z" class="ol s-primary-2e4a86" stroke-width="4"/>
+                  <ellipse cx="200" cy="54" rx="7" ry="5" class="ol s-secondary-f2b52e" stroke-width="2.5"/>
+                  <path d="M200 54 L292 58 L296 98" class="ln s-secondary-f2b52e-st" stroke-width="4"/>
+                  <ellipse cx="296" cy="104" rx="6" ry="9" class="ol s-secondary-f2b52e" stroke-width="2.5"/>
+                </g>
+                <g id="acc-head--headset" data-layer="acc-head--headset" class="v">
+                  <path d="M98 150 C96 28 304 28 302 150" class="ln" stroke-width="15"/>
+                  <path d="M98 150 C96 28 304 28 302 150" class="hs" stroke-width="9" stroke="#3B4160"/>
+                  <ellipse cx="97" cy="150" rx="17" ry="28" class="ol s-primary-e0533d" stroke-width="4"/>
+                  <ellipse cx="303" cy="150" rx="17" ry="28" class="ol s-primary-e0533d" stroke-width="4"/>
+                  <path d="M100 176 Q108 214 150 218" class="hs" stroke-width="5"/>
+                  <ellipse cx="156" cy="218" rx="9" ry="6" class="ol hsf" stroke-width="3"/>
+                </g>
+                <g id="acc-head--partyhat" data-layer="acc-head--partyhat" class="v">
+                  <g transform="rotate(-10 200 70)">
+                    <path d="M200 -8 L146 72 Q200 90 254 72 Z" class="ol s-secondary-f2b52e" stroke-width="4"/>
+                    <path d="M176 40 L224 52" class="s-primary-e0533d-st bt" fill="none" stroke-width="7"/>
+                    <path d="M164 58 L236 74" class="s-primary-e0533d-st bt" fill="none" stroke-width="7"/>
+                    <ellipse cx="200" cy="-10" rx="10" ry="10" class="ol s-primary-e0533d" stroke-width="3.5"/>
+                  </g>
+                </g>
+              </g>
+            </g>
+          </g>
+          <g id="acc-neck--scarf" data-layer="acc-neck--scarf" class="v">
+            <path d="M112 250 Q200 296 288 250 L292 276 Q200 322 108 276 Z" class="ol s-primary-2e7d5b" stroke-width="4"/>
+            <path d="M140 262 L138 288" class="s-secondary-ffffff-st bt" fill="none" stroke-width="5"/>
+            <path d="M170 270 L168 296" class="s-secondary-ffffff-st bt" fill="none" stroke-width="5"/>
+            <path d="M230 270 L228 296" class="s-secondary-ffffff-st bt" fill="none" stroke-width="5"/>
+            <path d="M260 262 L258 288" class="s-secondary-ffffff-st bt" fill="none" stroke-width="5"/>
+            <path d="M236 296 L262 352 L226 362 L212 304 Z" class="ol s-primary-2e7d5b" stroke-width="4"/>
+            <path d="M224 334 L254 326" class="s-secondary-ffffff-st bt" fill="none" stroke-width="5"/>
+          </g>
+          <g id="acc-neck--bowtie" data-layer="acc-neck--bowtie" class="v">
+            <path d="M200 258 L160 240 Q154 258 160 278 Z" class="ol s-primary-d9462e" stroke-width="4"/>
+            <path d="M200 258 L240 240 Q246 258 240 278 Z" class="ol s-primary-d9462e" stroke-width="4"/>
+            <ellipse cx="200" cy="259" rx="10" ry="11" class="ol s-primary-dark-ae3825" stroke-width="3.5"/>
+          </g>
+          <g id="acc-neck--ankara" data-layer="acc-neck--ankara" class="v">
+            <path d="M200 258 L160 240 Q154 258 160 278 Z" class="ol s-primary-e8892b" stroke-width="4"/>
+            <path d="M200 258 L240 240 Q246 258 240 278 Z" class="ol s-primary-e8892b" stroke-width="4"/>
+            <ellipse cx="200" cy="259" rx="10" ry="11" class="ol s-primary-dark-ba6e22" stroke-width="3.5"/>
+            <ellipse cx="172" cy="252" rx="3.4" ry="3.4" fill="#1F6F6B"/>
+            <ellipse cx="228" cy="252" rx="3.4" ry="3.4" fill="#1F6F6B"/>
+            <ellipse cx="176" cy="267" rx="3.4" ry="3.4" class="s-secondary-ffe08a"/>
+            <ellipse cx="224" cy="267" rx="3.4" ry="3.4" class="s-secondary-ffe08a"/>
+            <ellipse cx="166" cy="260" rx="3.4" ry="3.4" class="s-secondary-ffe08a"/>
+            <ellipse cx="234" cy="260" rx="3.4" ry="3.4" class="s-secondary-ffe08a"/>
+          </g>
+          <g id="acc-neck--medal" data-layer="acc-neck--medal" class="v">
+            <path d="M166 244 L200 296 L234 244" class="ln bt" stroke-width="15"/>
+            <path d="M166 244 L200 296 L234 244" class="s-primary-d9462e-st bt" fill="none" stroke-width="9"/>
+            <ellipse cx="200" cy="308" rx="22" ry="22" class="ol" fill="#F2B52E" stroke-width="4"/>
+            <path d="M200 296 L203.6 304.4 L212 308 L203.6 311.6 L200 320 L196.4 311.6 L188 308 L196.4 304.4 Z" fill="#FFF6C8" stroke="#E0A100" stroke-width="2" stroke-linejoin="round"/>
+          </g>
+          <g transform="translate(140 290)">
+            <g class="aim aim-l">
+              <g transform="translate(-140 -290)">
+                <g id="arm-l--idle" data-layer="arm-l--idle" class="v">
+                  <path d="M140 290 Q92 350 100 396" class="olb" stroke-width="44" fill="none"/>
+                  <path d="M140 290 Q92 350 100 396" class="fs" stroke-width="34"/>
+                  <g transform="translate(100 396) rotate(-9.87)">
+                    <ellipse cx="0" cy="24" rx="23" ry="31" class="fur ol" stroke-width="5"/>
+                    <path d="M-9 40 L-9 53" class="ln" stroke-width="3"/>
+                    <path d="M0 42 L0 57" class="ln" stroke-width="3"/>
+                    <path d="M9 40 L9 53" class="ln" stroke-width="3"/>
+                  </g>
+                </g>
+                <g id="arm-l--point" data-layer="arm-l--point" class="v">
+                  <g transform="matrix(-1 0 0 1 400 0)">
+                    <path d="M260 290 Q332 302 364 244" class="olb" stroke-width="44" fill="none"/>
+                    <path d="M260 290 Q332 302 364 244" class="fs" stroke-width="34"/>
+                    <g transform="translate(364 244) rotate(-151.11)">
+                      <path d="M3 30 L3 76" class="ol ln" stroke-width="19" fill="none"/>
+                      <path d="M3 30 L3 76" class="fs" stroke-width="13"/>
+                      <ellipse cx="0" cy="16" rx="23" ry="23" class="fur ol" stroke-width="5"/>
+                      <path d="M-13 20 Q-7 29 -1 23" class="ln" stroke-width="3"/>
+                      <path d="M-13 10 Q-7 19 -1 13" class="ln" stroke-width="3"/>
+                    </g>
+                  </g>
+                </g>
+                <g id="arm-l--wave" data-layer="arm-l--wave" class="v">
+                  <g transform="matrix(-1 0 0 1 400 0)">
+                    <path d="M260 290 Q338 292 346 206" class="olb" stroke-width="44" fill="none"/>
+                    <path d="M260 290 Q338 292 346 206" class="fs" stroke-width="34"/>
+                    <g transform="translate(346 206) rotate(-174.69)">
+                      <ellipse cx="0" cy="24" rx="23" ry="31" class="fur ol" stroke-width="5"/>
+                      <path d="M-9 40 L-9 53" class="ln" stroke-width="3"/>
+                      <path d="M0 42 L0 57" class="ln" stroke-width="3"/>
+                      <path d="M9 40 L9 53" class="ln" stroke-width="3"/>
+                    </g>
+                  </g>
+                </g>
+                <g id="arm-l--cheeks" data-layer="arm-l--cheeks" class="v">
+                  <path d="M140 290 Q76 280 114 232" class="olb" stroke-width="44" fill="none"/>
+                  <path d="M140 290 Q76 280 114 232" class="fs" stroke-width="34"/>
+                  <g transform="translate(114 232) rotate(-141.63)">
+                    <ellipse cx="0" cy="24" rx="23" ry="31" class="fur ol" stroke-width="5"/>
+                    <path d="M-9 40 L-9 53" class="ln" stroke-width="3"/>
+                    <path d="M0 42 L0 57" class="ln" stroke-width="3"/>
+                    <path d="M9 40 L9 53" class="ln" stroke-width="3"/>
+                  </g>
+                </g>
+                <g id="arm-l--clasp" data-layer="arm-l--clasp" class="v">
+                  <path d="M140 290 Q112 336 178 314" class="olb" stroke-width="44" fill="none"/>
+                  <path d="M140 290 Q112 336 178 314" class="fs" stroke-width="34"/>
+                  <g transform="translate(178 314) rotate(-108.43)">
+                    <ellipse cx="0" cy="24" rx="23" ry="31" class="fur ol" stroke-width="5"/>
+                    <path d="M-9 40 L-9 53" class="ln" stroke-width="3"/>
+                    <path d="M0 42 L0 57" class="ln" stroke-width="3"/>
+                    <path d="M9 40 L9 53" class="ln" stroke-width="3"/>
+                  </g>
+                </g>
+                <g id="arm-l--coach" data-layer="arm-l--coach" class="v">
+                  <path d="M140 290 Q58 322 124 368" class="olb" stroke-width="44" fill="none"/>
+                  <path d="M140 290 Q58 322 124 368" class="fs" stroke-width="34"/>
+                  <g transform="translate(124 368) rotate(-55.12)">
+                    <ellipse cx="0" cy="18" rx="23" ry="24" class="fur ol" stroke-width="5"/>
+                    <path d="M-12 22 Q-6 30 0 24" class="ln" stroke-width="3"/>
+                    <path d="M0 24 Q6 30 12 22" class="ln" stroke-width="3"/>
+                  </g>
+                </g>
+              </g>
+            </g>
+          </g>
+          <g transform="translate(260 290)">
+            <g class="aim aim-r">
+              <g transform="translate(-260 -290)">
+                <g id="arm-r--idle" data-layer="arm-r--idle" class="v">
+                  <path d="M260 290 Q308 350 300 396" class="olb" stroke-width="44" fill="none"/>
+                  <path d="M260 290 Q308 350 300 396" class="fs" stroke-width="34"/>
+                  <g transform="translate(300 396) rotate(9.87)">
+                    <ellipse cx="0" cy="24" rx="23" ry="31" class="fur ol" stroke-width="5"/>
+                    <path d="M-9 40 L-9 53" class="ln" stroke-width="3"/>
+                    <path d="M0 42 L0 57" class="ln" stroke-width="3"/>
+                    <path d="M9 40 L9 53" class="ln" stroke-width="3"/>
+                  </g>
+                </g>
+                <g id="arm-r--point" data-layer="arm-r--point" class="v">
+                  <path d="M260 290 Q332 302 364 244" class="olb" stroke-width="44" fill="none"/>
+                  <path d="M260 290 Q332 302 364 244" class="fs" stroke-width="34"/>
+                  <g transform="translate(364 244) rotate(-151.11)">
+                    <path d="M3 30 L3 76" class="ol ln" stroke-width="19" fill="none"/>
+                    <path d="M3 30 L3 76" class="fs" stroke-width="13"/>
+                    <ellipse cx="0" cy="16" rx="23" ry="23" class="fur ol" stroke-width="5"/>
+                    <path d="M-13 20 Q-7 29 -1 23" class="ln" stroke-width="3"/>
+                    <path d="M-13 10 Q-7 19 -1 13" class="ln" stroke-width="3"/>
+                  </g>
+                </g>
+                <g id="arm-r--wave" data-layer="arm-r--wave" class="v">
+                  <path d="M260 290 Q338 292 346 206" class="olb" stroke-width="44" fill="none"/>
+                  <path d="M260 290 Q338 292 346 206" class="fs" stroke-width="34"/>
+                  <g transform="translate(346 206) rotate(-174.69)">
+                    <ellipse cx="0" cy="24" rx="23" ry="31" class="fur ol" stroke-width="5"/>
+                    <path d="M-9 40 L-9 53" class="ln" stroke-width="3"/>
+                    <path d="M0 42 L0 57" class="ln" stroke-width="3"/>
+                    <path d="M9 40 L9 53" class="ln" stroke-width="3"/>
+                  </g>
+                </g>
+                <g id="arm-r--cheeks" data-layer="arm-r--cheeks" class="v">
+                  <path d="M260 290 Q324 280 286 232" class="olb" stroke-width="44" fill="none"/>
+                  <path d="M260 290 Q324 280 286 232" class="fs" stroke-width="34"/>
+                  <g transform="translate(286 232) rotate(141.63)">
+                    <ellipse cx="0" cy="24" rx="23" ry="31" class="fur ol" stroke-width="5"/>
+                    <path d="M-9 40 L-9 53" class="ln" stroke-width="3"/>
+                    <path d="M0 42 L0 57" class="ln" stroke-width="3"/>
+                    <path d="M9 40 L9 53" class="ln" stroke-width="3"/>
+                  </g>
+                </g>
+                <g id="arm-r--clasp" data-layer="arm-r--clasp" class="v">
+                  <path d="M260 290 Q288 336 222 314" class="olb" stroke-width="44" fill="none"/>
+                  <path d="M260 290 Q288 336 222 314" class="fs" stroke-width="34"/>
+                  <g transform="translate(222 314) rotate(108.43)">
+                    <ellipse cx="0" cy="24" rx="23" ry="31" class="fur ol" stroke-width="5"/>
+                    <path d="M-9 40 L-9 53" class="ln" stroke-width="3"/>
+                    <path d="M0 42 L0 57" class="ln" stroke-width="3"/>
+                    <path d="M9 40 L9 53" class="ln" stroke-width="3"/>
+                  </g>
+                </g>
+                <g id="arm-r--coach" data-layer="arm-r--coach" class="v">
+                  <path d="M260 290 Q346 306 340 214" class="olb" stroke-width="44" fill="none"/>
+                  <path d="M260 290 Q346 306 340 214" class="fs" stroke-width="34"/>
+                  <g transform="translate(340 214) rotate(176.27)">
+                    <path d="M3 30 L3 76" class="ol ln" stroke-width="19" fill="none"/>
+                    <path d="M3 30 L3 76" class="fs" stroke-width="13"/>
+                    <ellipse cx="0" cy="16" rx="23" ry="23" class="fur ol" stroke-width="5"/>
+                    <path d="M-13 20 Q-7 29 -1 23" class="ln" stroke-width="3"/>
+                    <path d="M-13 10 Q-7 19 -1 13" class="ln" stroke-width="3"/>
+                  </g>
+                </g>
+              </g>
+            </g>
+          </g>
+          <g id="fx--sparkles" data-layer="fx--sparkles" class="v">
+            <g class="twinkle">
+              <path d="M334 62 L338.2 71.8 L348 76 L338.2 80.2 L334 90 L329.8 80.2 L320 76 L329.8 71.8 Z" fill="#FFD34E" stroke="#E0A100" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M70 116 L73 123 L80 126 L73 129 L70 136 L67 129 L60 126 L67 123 Z" fill="#FFD34E" stroke="#E0A100" stroke-width="2" stroke-linejoin="round"/>
+            </g>
+          </g>
+          <g id="fx--sweat" data-layer="fx--sweat" class="v">
+            <g class="drip">
+              <path d="M300 92 C308 106 314 114 308 124 C302 132 290 130 290 120 C290 112 296 104 300 92 Z" fill="#8CC8F0" stroke="#3D84B8" stroke-width="3" stroke-linejoin="round"/>
+            </g>
+          </g>
+          <g id="fx--exclaim" data-layer="fx--exclaim" class="v">
+            <g transform="translate(334 62) rotate(14)">
+              <path d="M0 0 L0 24" fill="none" stroke="#D9462E" stroke-width="9" stroke-linecap="round"/>
+              <ellipse cx="0" cy="38" rx="5.5" ry="5.5" fill="#D9462E"/>
+            </g>
+            <g transform="translate(362 96) rotate(14)">
+              <path d="M0 0 L0 20" fill="none" stroke="#D9462E" stroke-width="7.5" stroke-linecap="round"/>
+              <ellipse cx="0" cy="32" rx="4.5" ry="4.5" fill="#D9462E"/>
+            </g>
+          </g>
+          <g id="fx--tears" data-layer="fx--tears" class="v">
+            <path d="M126 172 C130 180 134 184 130 190 C126 194 120 192 120 186 C120 182 124 178 126 172 Z" fill="#8CC8F0" stroke="#3D84B8" stroke-width="2.5" stroke-linejoin="round"/>
+            <path d="M274 172 C278 180 282 184 278 190 C274 194 268 192 268 186 C268 182 272 178 274 172 Z" fill="#8CC8F0" stroke="#3D84B8" stroke-width="2.5" stroke-linejoin="round"/>
+          </g>
+          <g id="fx--stars" data-layer="fx--stars" class="v">
+            <g class="twinkle">
+              <path d="M92 57 L94.7 63.3 L101 66 L94.7 68.7 L92 75 L89.3 68.7 L83 66 L89.3 63.3 Z" fill="#FFD34E" stroke="#E0A100" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M308 26 L311.6 34.4 L320 38 L311.6 41.6 L308 50 L304.4 41.6 L296 38 L304.4 34.4 Z" fill="#FFD34E" stroke="#E0A100" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M358 118 L361 125 L368 128 L361 131 L358 138 L355 131 L348 128 L355 125 Z" fill="#FFD34E" stroke="#E0A100" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M40 170 L42.4 175.6 L48 178 L42.4 180.4 L40 186 L37.6 180.4 L32 178 L37.6 175.6 Z" fill="#FFD34E" stroke="#E0A100" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M350 207 L352.7 213.3 L359 216 L352.7 218.7 L350 225 L347.3 218.7 L341 216 L347.3 213.3 Z" fill="#FFD34E" stroke="#E0A100" stroke-width="2" stroke-linejoin="round"/>
+            </g>
+          </g>
+        </g>
+      </g>
+    </g>
+  </g>
+</g>
+</svg>

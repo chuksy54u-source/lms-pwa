@@ -1,0 +1,124 @@
+/* Bearilly design tokens.
+   Colours come from the Bearilly V2 roadmap: navy, honey, bear tan, cream paper, ink.
+   A school's branding (GET /api/v1/tenant or /schools/:id/branding) overrides --brand, --accent and --font
+   at runtime (components/app/TenantProvider.jsx). Everything else is derived from those, so a school is
+   re-skinned from data, never from code. */
+
+:root {
+  /* School-overridable */
+  --brand: #1e3a5f;          /* Bearilly navy */
+  --accent: #e8a33d;         /* honey */
+  --font: 'Poppins', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Derived from the school colours */
+  --on-brand: #ffffff;       /* the API enforces 4.5:1 contrast of --brand against white */
+  --brand-strong: color-mix(in srgb, var(--brand) 80%, #000);
+  --brand-text: var(--brand);
+  --brand-soft: color-mix(in srgb, var(--brand) 9%, var(--surface));
+  --brand-softer: color-mix(in srgb, var(--brand) 5%, var(--surface));
+  --accent-soft: color-mix(in srgb, var(--accent) 20%, var(--surface));
+  --accent-ink: color-mix(in srgb, var(--accent) 38%, #241503);
+
+  /* Bearilly fixed palette */
+  --tan: #c99b68;
+  --tan-line: #d4a373;
+  --tan-ink: #8a5a2b;        /* tan for small text (5.2:1 on cream) */
+  --bg: #fbf4e8;             /* cream paper */
+  --bg-deep: #f5ead6;
+  --surface: #ffffff;
+  --surface-2: #f8f1e4;
+  --line: #ecdfc8;
+  --line-strong: #dccaa9;
+  --ink: #222b38;
+  --ink-2: #47515f;
+  --muted: #5b6270;          /* 5.2:1+ on every light surface */
+
+  --success: #23784a;
+  --success-soft: #e5f3ea;
+  --warn: #93520f;
+  --warn-soft: #fcefd9;
+  --danger: #a8321f;
+  --danger-soft: #fbe6e1;
+  --info: #2e6db4;
+  --info-soft: #e7f0fa;
+
+  --mood-adorable: var(--success);
+  --mood-worried: var(--warn);
+  --mood-intense: var(--danger);
+
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius: 18px;
+  --radius-lg: 26px;
+  --pill: 999px;
+  --shadow-sm: 0 1px 2px rgb(74 52 20 / 6%);
+  --shadow: 0 1px 2px rgb(74 52 20 / 6%), 0 8px 24px rgb(74 52 20 / 8%);
+  --shadow-lg: 0 2px 6px rgb(74 52 20 / 8%), 0 18px 48px rgb(74 52 20 / 14%);
+  --focus: 0 0 0 3px color-mix(in srgb, var(--accent) 70%, transparent);
+
+  --tabbar-h: 68px;
+  --sidebar-w: 248px;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+
+  color-scheme: light;
+}
+
+/* Dark theme: follows the system unless the person picked one in Settings. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #111827;
+    --bg-deep: #0c1220;
+    --surface: #1a2234;
+    --surface-2: #212b40;
+    --line: #2b3650;
+    --line-strong: #3a4766;
+    --ink: #eef1f6;
+    --ink-2: #c5ccd9;
+    --muted: #a3acbf;
+    --tan-ink: #e0b98a;
+    --brand-text: color-mix(in srgb, var(--brand) 35%, #fff);
+    --brand-soft: color-mix(in srgb, var(--brand) 30%, var(--surface));
+    --brand-softer: color-mix(in srgb, var(--brand) 18%, var(--surface));
+    --accent-soft: color-mix(in srgb, var(--accent) 22%, var(--surface));
+    --accent-ink: color-mix(in srgb, var(--accent) 70%, #fff);
+    --success-soft: #173528;
+    --warn-soft: #3a2a14;
+    --danger-soft: #3d1c18;
+    --info-soft: #172c46;
+    --success: #5cc48b;
+    --warn: #eaa05a;
+    --danger: #f07a66;
+    --info: #79acec;
+    --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 8px 24px rgb(0 0 0 / 25%);
+    --shadow-lg: 0 2px 6px rgb(0 0 0 / 30%), 0 18px 48px rgb(0 0 0 / 40%);
+    color-scheme: dark;
+  }
+}
+:root[data-theme='dark'] {
+  --bg: #111827;
+  --bg-deep: #0c1220;
+  --surface: #1a2234;
+  --surface-2: #212b40;
+  --line: #2b3650;
+  --line-strong: #3a4766;
+  --ink: #eef1f6;
+  --ink-2: #c5ccd9;
+  --muted: #a3acbf;
+  --tan-ink: #e0b98a;
+  --brand-text: color-mix(in srgb, var(--brand) 35%, #fff);
+  --brand-soft: color-mix(in srgb, var(--brand) 30%, var(--surface));
+  --brand-softer: color-mix(in srgb, var(--brand) 18%, var(--surface));
+  --accent-soft: color-mix(in srgb, var(--accent) 22%, var(--surface));
+  --accent-ink: color-mix(in srgb, var(--accent) 70%, #fff);
+  --success-soft: #173528;
+  --warn-soft: #3a2a14;
+  --danger-soft: #3d1c18;
+  --info-soft: #172c46;
+  --success: #5cc48b;
+  --warn: #eaa05a;
+  --danger: #f07a66;
+  --info: #79acec;
+  --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 8px 24px rgb(0 0 0 / 25%);
+  --shadow-lg: 0 2px 6px rgb(0 0 0 / 30%), 0 18px 48px rgb(0 0 0 / 40%);
+  color-scheme: dark;
+}
